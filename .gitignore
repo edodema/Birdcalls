@@ -423,3 +423,6 @@ data/*
 models/*
 outputs
 venv
+
+# Exceptions
+!.gitkeep
