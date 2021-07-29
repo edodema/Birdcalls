@@ -11,3 +11,4 @@ black
 matplotlib
 plotly
 librosa
+pyspark

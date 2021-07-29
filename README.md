@@ -13,3 +13,10 @@ eBird seems to be better.
   [melscale](https://importchris.medium.com/how-to-create-understand-mel-spectrograms-ff7634991056),
   [mel spectrogram](https://medium.com/analytics-vidhya/understanding-the-mel-spectrogram-fca2afa2ce53),
 - [ ] Try some preprocessing with differend sample rate.
+- [ ] Training in different times.
+- [ ] Try resampling to a fixed size.
+- [ ] Remember you just need to add ```self=...``` in hydra's call.
+- [ ] Use **denoising autoencoders** to resolve the cocktail party problem, maybe use mean birdcalld as clean data.
+- [ ] A sample rate of 32000 means that in 1 second we have 32000 frames.
+- [ ] Organize methods in a clearer way as Pellacini did.
+- [ ] Write a function that precomputes tensors, this way training will be easier.

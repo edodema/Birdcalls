@@ -1,0 +1,4 @@
+classification:
+  _target_: src.pl_modules.module.Classification
+  input_channels: 1
+  n_feature: 8

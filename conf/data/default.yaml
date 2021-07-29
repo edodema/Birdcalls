@@ -1,41 +1,64 @@
 datamodule:
-#  _target_: src.pl_data.datamodule.MyDataModule
+  _target_: src.pl_data.datamodule.SplitDataModule
+  weighting: False
+  online: True
+
+  spectrogram:
+    _target_: src.common.utils.compute_spectrogram
+    n_fft: 1024
+    win_length: #None
+    hop_length: 512
+    n_mels: 128
+    mel: True
 
   datasets:
+    idx2bird_path: ${oc.env:IDX2BIRD}
+    bird2idx_path: ${oc.env:BIRD2IDX}
+
     train:
       soundscapes:
-#        _target_: src.pl_data.dataset.MelDataset
+        _target_: src.pl_data.dataset.SoundscapeDataset
         name: SOUNDSCAPES
         path: ${oc.env:TRAIN_SOUNDSCAPES}
+        csv_path: ${oc.env:SOUNDSCAPES_CSV}
         train: True
 
       birdcalls:
         _target_: src.pl_data.dataset.BirdcallDataset
         name: BIRDCALLS
         path: ${oc.env:TRAIN_BIRDCALLS}
+        csv_path: ${oc.env:BIRDCALLS_CSV}
         train: True
-        mode: "init"
-        init:
-          _target_: src.pl_data.dataset.BirdcallDataset.init
-          path: ${oc.env:TRAIN_BIRDCALLS}
-          n_fft: 1024
-          win_length:
-          hop_length: 512
-          n_mels: 128
-        save:
-          _target_: src.pl_data.dataset.BirdcallDataset.save
-          bird_path: ${oc.env:BIRDCALL_PREPROCESSED_BIRD_NAMES}
-          call_path: ${oc.env:BIRDCALL_PREPROCESSED_BIRD_CALLS}
-        load:
-          _target_: src.pl_data.dataset.BirdcallDataset.load
-          bird_path: ${oc.env:BIRDCALL_PREPROCESSED_BIRD_NAMES}
-          call_path: ${oc.env:BIRDCALL_PREPROCESSED_BIRD_CALLS}
 
 #   val:
-#      - _target_: src.pl_data.dataset.MyDataset
-#        name: YourValDatasetName
-#        path: ${oc.env:YOUR_VAL_DATASET_PATH}
-#        train: False
+#     soundscapes:
+#      _target_: src.pl_data.dataset.SoundscapeDataset
+#      name: YourValDatasetName
+#      path: ${oc.env:YOUR_VAL_DATASET_PATH}
+#      csv_path: ${oc.env:VAL_SOUNDSCAPES_CSV}
+#      train: False
+#
+#    birdcalls:
+#      _target_: src.pl_data.dataset.BirdcallDataset
+#      name: YourValDatasetName
+#      path: ${oc.env:TEST_BIRDCALLS}
+#      csv_path: ${oc.env:TEST_BIRDCALLS_CSV}
+#      train: False
+#
+#   test:
+#    soundscapes:
+#      _target_: src.pl_data.dataset.SoundscapeDataset
+#      name: YourTestDatasetName
+#      path: ${oc.env:YOUR_TEST_DATASET_PATH}
+#      csv_path: ${oc.env:TEST_SOUNDSCAPES_CSV}
+#      train: False
+#
+#    birdcalls:
+#      _target_: src.pl_data.dataset.BirdcallDataset
+#      name: YourValDatasetName
+#      path: ${oc.env:TEST_BIRDCALLS}
+#      csv_path: ${oc.env:TEST_BIRDCALLS_CSV}
+#      train: False
 
   num_workers:
     train: 12
