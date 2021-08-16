@@ -1,7 +1,6 @@
 datamodule:
   _target_: src.pl_data.datamodule.SplitDataModule
   weighting: False
-  online: True
 
   spectrogram:
     _target_: src.common.utils.compute_spectrogram
@@ -10,6 +9,14 @@ datamodule:
     hop_length: 512
     n_mels: 128
     mel: True
+
+  num_workers:
+    train: 12
+    val: 12
+
+  batch_size:
+    train: 32
+    val: 16
 
   datasets:
     idx2bird_path: ${oc.env:IDX2BIRD}
@@ -59,11 +66,3 @@ datamodule:
 #      path: ${oc.env:TEST_BIRDCALLS}
 #      csv_path: ${oc.env:TEST_BIRDCALLS_CSV}
 #      train: False
-
-  num_workers:
-    train: 12
-    val: 12
-
-  batch_size:
-    train: 32
-    val: 16

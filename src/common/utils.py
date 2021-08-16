@@ -12,7 +12,6 @@ import librosa
 import json
 import numpy as np
 
-
 # https://github.com/lucmos/nn-template/blob/969c36f069723d2a99ad31eb4b883160a572f651/src/common/utils.py#L13
 def get_env(env_name: str, default: Optional[str] = None) -> str:
     """
@@ -76,12 +75,12 @@ assert (
     TRAIN_SOUNDSCAPES.exists()
 ), "You must configure the TRAIN_SOUNDSCAPES environment variable in a .env file!"
 
+# Get global variables for vocabularies.
 BIRD2IDX: Path = Path(get_env("BIRD2IDX"))
 assert (
     BIRD2IDX.exists()
 ), "You must configure the BIRD2IDX environment variable in a .env file!"
 
-# Get global variables for vocabularies.
 IDX2BIRD: Path = Path(get_env("IDX2BIRD"))
 assert (
     IDX2BIRD.exists()
@@ -308,7 +307,8 @@ def get_spectrogram(audio_file: Path, time_window: Optional[Tuple[int, int]] = N
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: omegaconf.DictConfig) -> None:
-    hydra.utils.call(cfg.data.datamodule.datasets.train.soundscapes, _recursive_=False)
+    soundscapes = cfg.data.datamodule.datasets.train.soundscapes
+    print(soundscapes)
 
 
 if __name__ == "__main__":

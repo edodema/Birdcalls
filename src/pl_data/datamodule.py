@@ -14,7 +14,6 @@ class SplitDataModule(pl.LightningModule):
         num_workers: DictConfig,
         batch_size: DictConfig,
         weighting: bool,
-        online: bool,
         **kwargs,
     ):
         super().__init__()
@@ -22,7 +21,6 @@ class SplitDataModule(pl.LightningModule):
         self.num_workers = num_workers
         self.batch_size = batch_size
         self.weighting = weighting
-        self.online = online
 
         self.train_soundscapes_ds: Optional[Dataset] = None
         self.val_soundscapes_ds: Optional[Dataset] = None
@@ -34,7 +32,6 @@ class SplitDataModule(pl.LightningModule):
 
     def prepare_data(self) -> None:
         # TODO: Do not train on the whole dataset since we have no val set. Fit on smaller sets (on Colab) train on the whole set only in the end.
-        # TODO: Function that preprocesses data (See README.md) to make easier loading/splitting it.
         pass
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -62,19 +59,19 @@ class SplitDataModule(pl.LightningModule):
     def train_dataloader(
         self,
     ) -> Union[DataLoader, List[DataLoader], Dict[str, DataLoader]]:
+        batch_size = self.batch_size["train"]
+
         soundscapes_dl = DataLoader(
             dataset=self.train_soundscapes_ds,
-            batch_size=self.batch_size,
-            collate_fn=SoundscapeDataset.collate_fn_on,
+            batch_size=batch_size,
+            collate_fn=SoundscapeDataset.collate_fn,
             shuffle=True,
         )
 
         birdcalls_dl = DataLoader(
             dataset=self.train_birdcalls_ds,
-            batch_size=self.batch_size,
-            collate_fn=BirdcallDataset.collate_fn(
-                weighting=self.weighting, online=self.online
-            ),
+            batch_size=batch_size,
+            collate_fn=BirdcallDataset.collate_fn(weighting=self.weighting),
             shuffle=True,
         )
 
@@ -130,7 +127,10 @@ class SplitDataModule(pl.LightningModule):
 def main(cfg: DictConfig):
     split = hydra.utils.instantiate(cfg.data.datamodule, _recursive_=False)
     split.setup()
-    print(split)
+    dataloaders = split.train_dataloader()
+
+    soundscapes_dl = dataloaders["train_soundscapes_dataloader"]
+    birdcalls_dl = dataloaders["train_birdcalls_dataloader"]
 
 
 if __name__ == "__main__":

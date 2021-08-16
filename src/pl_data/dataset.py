@@ -1,15 +1,10 @@
 from pathlib import Path
 from typing import Dict
-
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import pandas as pd
-
-import hydra
-import omegaconf
 from src.common.utils import (
-    PROJECT_ROOT,
     TRAIN_BIRDCALLS,
     TRAIN_SOUNDSCAPES,
     BIRD2IDX,
@@ -20,7 +15,11 @@ from src.common.utils import (
 
 class SoundscapeDataset(Dataset):
     def __init__(self, csv_path: str, **kwargs):
-        super().__init__()
+        """
+        :param csv_path: Path of the training CSV file.
+        :param kwargs:
+        """
+        super(SoundscapeDataset, self).__init__()
         df = pd.read_csv(csv_path)
         self.row_id = df["row_id"].values.tolist()
         self.site = df["site"].values.tolist()
@@ -34,9 +33,16 @@ class SoundscapeDataset(Dataset):
         self.birds[mask] = 0
 
     def __len__(self):
+        """
+        :return: Length of the dataset.
+        """
         return len(self.seconds)
 
     def __getitem__(self, item):
+        """
+        :param item: Index of the item to retrieve.
+        :return: The item-th entry.
+        """
         return {
             "row_id": self.row_id[item],
             "site": self.site[item],
@@ -46,24 +52,23 @@ class SoundscapeDataset(Dataset):
         }
 
     @staticmethod
-    def collate_fn_on(data):
+    def collate_fn(data):
         """
-        Dataloader's collate function, it computes the spectrogram on the fly.
+        DataLoader's collate function, it computes the spectrogram on the fly.
         :param data: Input data.
-        :return:
+        :return: A batch.
         """
         golds = []
         spectrograms = []
+
         for obj in data:
             audio_id = obj["audio_id"]
-            site = obj["site"]
             seconds = obj["seconds"]
-            row_id = obj["row_id"]
             birds = obj["birds"]
             golds.append(birds)
 
+            # We consider 5 seconds audio clips.
             file_path = list(TRAIN_SOUNDSCAPES.glob(audio_id + "*"))[0]
-
             spec = get_spectrogram(file_path, time_window=(seconds - 5, seconds))
             spectrograms.append(spec)
 
@@ -71,10 +76,15 @@ class SoundscapeDataset(Dataset):
 
 
 class BirdcallDataset(Dataset):
+    # Static attributes
     bird2idx = load_vocab(BIRD2IDX)
     n_classes = len(bird2idx)
 
     def __init__(self, csv_path: str, **kwargs):
+        """
+        :param csv_path: Path of the training CSV file.
+        :param kwargs:
+        """
         df = pd.read_csv(csv_path)
         self.primary_label = df["primary_label"]
         self.scientific_name = df["scientific_name"]
@@ -83,9 +93,16 @@ class BirdcallDataset(Dataset):
         self.rating = df["rating"]
 
     def __len__(self) -> int:
+        """
+        :return: Length of the dataset.
+        """
         return len(self.rating)
 
     def __getitem__(self, item) -> Dict:
+        """
+        :param item: Index of the item to retrieve.
+        :return: The item-th entry.
+        """
         return {
             "primary_label": self.primary_label[item],
             "scientific_name": self.scientific_name[item],
@@ -95,11 +112,11 @@ class BirdcallDataset(Dataset):
         }
 
     @staticmethod
-    def collate_fn_on(data):
+    def collate(data):
         """
-        Dataloader's collate function, it computes the spectrogram on the fly.
+        DataLoader's collate function, it computes the spectrogram on the fly.
         :param data: Input data
-        :return:
+        :return: A batch.
         """
         targets = []
         spectrograms = []
@@ -107,12 +124,13 @@ class BirdcallDataset(Dataset):
         for obj in data:
             primary_label = obj["primary_label"]
             filename = obj["filename"]
-            rating = obj["rating"]
 
+            # Compute the spectrogram.
             audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
             spec = get_spectrogram(audio_file)
             spectrograms.append(spec)
 
+            # One hot vector for classification.
             target = torch.zeros(BirdcallDataset.n_classes, dtype=torch.long)
             target[BirdcallDataset.bird2idx[primary_label]] = 1
             targets.append(target)
@@ -120,12 +138,12 @@ class BirdcallDataset(Dataset):
         return {"targets": targets, "spectrograms": spectrograms}
 
     @staticmethod
-    def collate_fn_weighted_on(data):
+    def collate_weighted(data):
         """
-        Dataloader's collate function, it computes the spectrogram on the fly.
+        DataLoader's collate function, it computes the spectrogram on the fly weighting a spectrogram according to the
+         recording's quality.
         :param data: Input data
-        :param weighting: If true we weight each recording for its rating.
-        :return:
+        :return: A batch.
         """
         targets = []
         spectrograms = []
@@ -135,12 +153,12 @@ class BirdcallDataset(Dataset):
             filename = obj["filename"]
             rating = obj["rating"]
 
+            # Compute spectrograms.
             audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
             spec = get_spectrogram(audio_file)
-
-            # To weight each spectrogram for its rating uncomment that line and comment the one before.
             spectrograms.append(spec * rating)
 
+            # One hot vector for classification.
             target = torch.zeros(BirdcallDataset.n_classes, dtype=torch.long)
             target[BirdcallDataset.bird2idx[primary_label]] = 1
             targets.append(target)
@@ -148,72 +166,13 @@ class BirdcallDataset(Dataset):
         return {"targets": targets, "spectrograms": spectrograms}
 
     @staticmethod
-    def collate_fn(weighting: bool = False, online: bool = False):
+    def collate_fn(weighting: bool = False):
         """
-        Wrapper returning a collate function.
+        Wrapper for collate functions.
         :param weighting: If true we weight each spectrogram for its rating.
-        :param online: If true we compute spectrograms on the fly.
-        :return:
+        :return: A collate function.
         """
         if weighting:
-            if online:
-                return BirdcallDataset.collate_fn_weighted_on
-            else:
-                # return BirdcallDataset.collate_fn_weighted_off
-                pass
+            return BirdcallDataset.collate_weighted
         else:
-            if online:
-                return BirdcallDataset.collate_fn_on
-            else:
-                # return BirdcallDataset.collate_fn_off
-                pass
-
-
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
-def main(cfg: omegaconf.DictConfig) -> None:
-    birdcalls_ds = hydra.utils.instantiate(
-        cfg.data.datamodule.datasets.train.birdcalls, _recursive_=False
-    )
-    birdcalls_dl = DataLoader(
-        dataset=birdcalls_ds,
-        batch_size=4,
-        collate_fn=BirdcallDataset.collate_fn_on,
-        shuffle=True,
-    )
-
-    soundscapes_ds = hydra.utils.instantiate(
-        cfg.data.datamodule.datasets.train.soundscapes, _recursive_=False
-    )
-
-    soundscapes_dl = DataLoader(
-        dataset=soundscapes_ds,
-        batch_size=20,
-        collate_fn=SoundscapeDataset.collate_fn_on,
-        shuffle=True,
-    )
-
-    # print("Soundscapes")
-    # for xb in soundscapes_dl:
-    #     targets = xb["targets"]
-    #     specs = xb["spectrograms"]
-    #     # print(targets)
-    #     # print(specs)
-    #     for spec, target in zip(specs, targets):
-    #         call = "nocall" if target == 0 else "Call"
-    #         plot_spectrogram(spec[0], title=call)
-    #     break
-
-    print("Birdcalls")
-    for xb in birdcalls_dl:
-        targets = xb["targets"]
-        specs = xb["spectrograms"]
-        print(targets)
-        print(specs)
-        # for spec in specs:
-        #     plot_spectrogram(spec[0], title="Birdcall")
-
-        break
-
-
-if __name__ == "__main__":
-    main()
+            return BirdcallDataset.collate

@@ -1,23 +1,30 @@
 from typing import Dict, Any
 
-import hydra.utils
+import hydra
+from omegaconf import DictConfig
 import torch
 from torch import nn
 from torchmetrics import Accuracy
 import pytorch_lightning as pl
-from src.pl_modules.model import Classification, Detection
+import src.pl_modules.model as model
+from src.common.utils import PROJECT_ROOT
+
+
+class Detection(pl.LightningModule):
+    def __init__(self, **kwargs):
+        super(Detection, self).__init__()
 
 
 class Classification(pl.LightningModule):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super(Classification, self).__init__()
         self.save_hyperparameters()
 
-        self.model = Classification()
+        self.model = model.Classification()
 
         self.loss = nn.CrossEntropyLoss
 
-        metric = Accuracy
+        metric = Accuracy()
         self.train_accuracy = metric.clone()
         self.val_accuracy = metric.clone()
         self.test_accuracy = metric.clone()
@@ -61,3 +68,14 @@ class Classification(pl.LightningModule):
                 self.hparams.optim.lr_scheduler, optimizer=opt
             )
             return [opt, scheduler]
+
+
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
+def main(cfg: DictConfig):
+    classification = hydra.utils.instantiate(
+        cfg.model.classification, _recursive_=False
+    )
+
+
+if __name__ == "__main__":
+    main()

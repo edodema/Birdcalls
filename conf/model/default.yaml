@@ -1,3 +1,8 @@
+detection:
+  _target_: src.pl_modules.model.Detection
+  input_channels: 1
+  n_feature: 8
+
 classification:
   _target_: src.pl_modules.module.Classification
   input_channels: 1
