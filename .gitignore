@@ -417,8 +417,20 @@ TSWLatexianTemp*
 .cache
 .idea
 data/*
-out/*
+
+out/split_datasets/train/*
+out/split_datasets/val/*
+
+out/test/birdcalls/*
+out/test/soundscapes/*
+
+out/val/birdcalls/*
+out/val/soundscapes/*
+
+out/vocabs/*
+
 outputs
+wandb
 venv
 
 # Exceptions
