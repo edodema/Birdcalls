@@ -10,6 +10,7 @@ defaults:
   - logging: default
   - model: default
   - optim: default
-#  - train: default
+  - split: default
+  - train: default
 #    Uncomment this parameter to get parallel job running
 #  - hydra/launcher: joblib

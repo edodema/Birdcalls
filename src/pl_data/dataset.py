@@ -3,6 +3,8 @@ from typing import Dict
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torch.nn.functional import one_hot
+import torchaudio
 import pandas as pd
 from src.common.utils import (
     TRAIN_BIRDCALLS,
@@ -10,6 +12,7 @@ from src.common.utils import (
     BIRD2IDX,
     get_spectrogram,
     load_vocab,
+    plot_spectrogram,
 )
 
 
@@ -21,16 +24,26 @@ class SoundscapeDataset(Dataset):
         """
         super(SoundscapeDataset, self).__init__()
         df = pd.read_csv(csv_path)
-        self.row_id = df["row_id"].values.tolist()
-        self.site = df["site"].values.tolist()
-        self.audio_id = df["audio_id"].values.astype(np.str).tolist()
-        self.seconds = df["seconds"].values
 
-        # Having a call corresponds to 1, otherwise it is 0.
-        birds = df["birds"].values
-        mask = birds == "nocall"
-        self.birds = np.ones(shape=birds.shape, dtype=np.int)
-        self.birds[mask] = 0
+        # This is needed here due to the birds column having different type values in preprocessed CSV.
+        if "train" not in df.columns:
+            self.row_id = df["row_id"].values.tolist()
+            self.site = df["site"].values.tolist()
+            self.audio_id = df["audio_id"].values.astype(np.str).tolist()
+            self.seconds = df["seconds"].values
+
+            # Having a call corresponds to 1, otherwise it is 0.
+            birds = df["birds"].values
+            mask = birds == "nocall"
+            self.birds = np.ones(shape=birds.shape, dtype=np.int)
+            self.birds[mask] = 0
+        else:
+            # If there is a train column then the CSV is a train/eval split thus has already been preprocessed.
+            self.row_id = df["row_id"].values.tolist()
+            self.site = df["site"].values.tolist()
+            self.audio_id = df["audio_id"].values.astype(np.str).tolist()
+            self.seconds = df["seconds"].values
+            self.birds = df["birds"].values
 
     def __len__(self):
         """
@@ -72,13 +85,18 @@ class SoundscapeDataset(Dataset):
             spec = get_spectrogram(file_path, time_window=(seconds - 5, seconds))
             spectrograms.append(spec)
 
-        return {"spectrograms": spectrograms, "targets": golds}
+        return {
+            "spectrograms": torch.stack(spectrograms),
+            "targets": torch.tensor(golds, dtype=torch.float).unsqueeze(1),
+        }
 
 
 class BirdcallDataset(Dataset):
     # Static attributes
     bird2idx = load_vocab(BIRD2IDX)
     n_classes = len(bird2idx)
+    # The fixed length of an audio file in seconds.
+    standard_len = 3.5 * 60
 
     def __init__(self, csv_path: str, **kwargs):
         """
@@ -127,21 +145,30 @@ class BirdcallDataset(Dataset):
 
             # Compute the spectrogram.
             audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
-            spec = get_spectrogram(audio_file)
+
+            # Directly load the audio file since we need to do some light preprocessing on the waveform.
+            raw_waveform, sample_rate = torchaudio.load(audio_file)
+            waveform = BirdcallDataset.waveform_resize(
+                waveform=raw_waveform, sample_rate=sample_rate
+            )
+
+            # Get the spectrograms.
+            spec = get_spectrogram(audio=(waveform, sample_rate))
             spectrograms.append(spec)
 
-            # One hot vector for classification.
-            target = torch.zeros(BirdcallDataset.n_classes, dtype=torch.long)
-            target[BirdcallDataset.bird2idx[primary_label]] = 1
+            # List of targets that will build up one-hot vector for classification.
+            target = BirdcallDataset.bird2idx[primary_label]
             targets.append(target)
 
-        return {"targets": targets, "spectrograms": spectrograms}
+        return {
+            "targets": torch.tensor(targets),
+            "spectrograms": torch.stack(spectrograms),
+        }
 
     @staticmethod
     def collate_weighted(data):
         """
-        DataLoader's collate function, it computes the spectrogram on the fly weighting a spectrogram according to the
-         recording's quality.
+        DataLoader's collate function, it computes the spectrogram on the fly.
         :param data: Input data
         :return: A batch.
         """
@@ -153,20 +180,29 @@ class BirdcallDataset(Dataset):
             filename = obj["filename"]
             rating = obj["rating"]
 
-            # Compute spectrograms.
+            # Compute the spectrogram.
             audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
-            spec = get_spectrogram(audio_file)
+
+            # Directly load the audio file since we need to do some light preprocessing on the waveform.
+            raw_waveform, sample_rate = torchaudio.load(audio_file)
+            waveform = BirdcallDataset.waveform_resize(
+                waveform=raw_waveform, sample_rate=sample_rate
+            )
+
+            # Get the spectrograms.
+            spec = get_spectrogram(audio=(waveform, sample_rate))
             spectrograms.append(spec * rating)
 
-            # One hot vector for classification.
-            target = torch.zeros(BirdcallDataset.n_classes, dtype=torch.long)
-            target[BirdcallDataset.bird2idx[primary_label]] = 1
+            # List of targets that will build up one-hot vector for classification.
+            target = BirdcallDataset.bird2idx[primary_label]
             targets.append(target)
-
-        return {"targets": targets, "spectrograms": spectrograms}
+        return {
+            "targets": one_hot(torch.tensor(targets), BirdcallDataset.n_classes),
+            "spectrograms": torch.stack(spectrograms),
+        }
 
     @staticmethod
-    def collate_fn(weighting: bool = False):
+    def collate_fn(weighting: bool):
         """
         Wrapper for collate functions.
         :param weighting: If true we weight each spectrogram for its rating.
@@ -176,3 +212,38 @@ class BirdcallDataset(Dataset):
             return BirdcallDataset.collate_weighted
         else:
             return BirdcallDataset.collate
+
+    @staticmethod
+    def waveform_resize(waveform: torch.Tensor, sample_rate: int):
+        """
+        Pad the waveform to a standard size one, if it is too long then gets truncated while if it is
+        too short gets padded in reflection mode.
+        :param waveform: A waveform.
+        :param sample_rate: Its sample rate.
+        :return: A waveform of standardized size.
+        """
+        # Get length of the waveform and length of the standard waveform.
+        waveform_len = waveform.shape[1]
+        standard_len = int(BirdcallDataset.standard_len * sample_rate)
+
+        if waveform_len > standard_len:
+            # It gets truncated
+            standard_waveform = waveform[:, :standard_len]
+        elif waveform_len < standard_len:
+            # It gets padded using reflection.
+
+            # Get the padding dimension.
+            offset = standard_len - waveform_len
+            m = offset // 2
+            pad = (m, m) if offset % 2 == 0 else (m + 1, m)
+
+            # Forced to use numpy due to torch.nn.functional.pad having some issues
+            # with 'reflect', 'replicate' and 'circular' mode.
+            standard_waveform = torch.from_numpy(
+                np.pad(array=waveform.numpy().squeeze(), pad_width=pad, mode="reflect")
+            ).unsqueeze(0)
+        else:
+            # It is unchanged.
+            standard_waveform = waveform
+
+        return standard_waveform

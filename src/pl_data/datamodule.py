@@ -3,116 +3,79 @@ import hydra
 import pytorch_lightning as pl
 from omegaconf import DictConfig
 from torch.utils.data import Dataset, DataLoader
-from src.common.utils import PROJECT_ROOT
 from src.pl_data.dataset import BirdcallDataset, SoundscapeDataset
 
 
-class SplitDataModule(pl.LightningModule):
+class SoundscapesDataModule(pl.LightningModule):
     def __init__(
         self,
         datasets: DictConfig,
         num_workers: DictConfig,
         batch_size: DictConfig,
-        weighting: bool,
+        shuffle: DictConfig,
         **kwargs,
     ):
         super().__init__()
         self.datasets = datasets
         self.num_workers = num_workers
         self.batch_size = batch_size
-        self.weighting = weighting
+        self.shuffle = shuffle
 
-        self.train_soundscapes_ds: Optional[Dataset] = None
-        self.val_soundscapes_ds: Optional[Dataset] = None
-        self.test_soundscapes_ds: Optional[Dataset] = None
-
-        self.train_birdcalls_ds: Optional[Dataset] = None
-        self.val_birdcalls_ds: Optional[Dataset] = None
-        self.test_birdcalls_ds: Optional[Dataset] = None
-
-    def prepare_data(self) -> None:
-        # TODO: Do not train on the whole dataset since we have no val set. Fit on smaller sets (on Colab) train on the whole set only in the end.
-        pass
+        # These attributes will be populated after self.setup() call.
+        self.train_ds: Optional[Dataset] = None
+        self.val_ds: Optional[Dataset] = None
+        self.test_ds: Optional[Dataset] = None
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage is None or stage == "fit":
-            self.train_soundscapes_ds = hydra.utils.instantiate(
-                self.datasets.train.soundscapes
-            )
-            self.train_birdcalls_ds = hydra.utils.instantiate(
-                self.datasets.train.birdcalls
-            )
+            # Train
+            self.train_ds = hydra.utils.instantiate(self.datasets.train)
+            # Val
+            self.val_ds = hydra.utils.instantiate(self.datasets.val)
 
-            # self.val_soundscapes_ds = hydra.utils.instantiate(
-            #     self.datasets.val.soundscapes
-            # )
-            # self.val_birdcalls_ds = hydra.utils.instantiate(self.datasets.val.birdcalls)
-
-        # if stage is None or stage == "test":
-        #     self.test_soundscapes_ds = hydra.utils.instantiate(
-        #         self.datasets.test.soundscapes
-        #     )
-        #     self.test_birdcalls_ds = hydra.utils.instantiate(
-        #         self.datasets.test.birdcalls
-        #     )
+        if stage is None or stage == "test":
+            self.test_ds = hydra.utils.instantiate(self.datasets.test)
 
     def train_dataloader(
         self,
     ) -> Union[DataLoader, List[DataLoader], Dict[str, DataLoader]]:
         batch_size = self.batch_size["train"]
+        shuffle = self.shuffle["train"]
 
-        soundscapes_dl = DataLoader(
-            dataset=self.train_soundscapes_ds,
+        dl = DataLoader(
+            dataset=self.train_ds,
             batch_size=batch_size,
             collate_fn=SoundscapeDataset.collate_fn,
-            shuffle=True,
+            shuffle=shuffle,
         )
 
-        birdcalls_dl = DataLoader(
-            dataset=self.train_birdcalls_ds,
+        return dl
+
+    def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+        batch_size = self.batch_size["val"]
+        shuffle = self.shuffle["val"]
+
+        dl = DataLoader(
+            dataset=self.val_ds,
             batch_size=batch_size,
-            collate_fn=BirdcallDataset.collate_fn(weighting=self.weighting),
-            shuffle=True,
+            collate_fn=SoundscapeDataset.collate_fn,
+            shuffle=shuffle,
         )
 
-        return {
-            "train_soundscapes_dataloader": soundscapes_dl,
-            "train_birdcalls_dataloader": birdcalls_dl,
-        }
+        return dl
 
-    # def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-    #     soundscapes_dl = DataLoader(
-    #         dataset=self.val_soundscapes_ds,
-    #         batch_size=self.batch_size,
-    #         collate_fn=SoundscapeDataset.collate_fn_on,
-    #         shuffle=True,
-    #     )
-    #
-    #     birdcalls_dl = DataLoader(
-    #         dataset=self.val_birdcalls_ds,
-    #         batch_size=self.batch_size,
-    #         collate_fn=BirdcallDataset.collate_fn_on,
-    #         shuffle=True,
-    #     )
-    #
-    #     return [soundscapes_dl, birdcalls_dl]
-    #
-    # def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-    #     soundscapes_dl = DataLoader(
-    #         dataset=self.test_soundscapes_ds,
-    #         batch_size=self.batch_size,
-    #         collate_fn=SoundscapeDataset.collate_fn_on,
-    #         shuffle=True,
-    #     )
-    #
-    #     birdcalls_dl = DataLoader(
-    #         dataset=self.test_birdcalls_ds,
-    #         batch_size=self.batch_size,
-    #         collate_fn=BirdcallDataset.collate_fn_on,
-    #         shuffle=True,
-    #     )
-    #
-    #     return [soundscapes_dl, birdcalls_dl]
+    def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+        batch_size = self.batch_size["test"]
+        shuffle = self.shuffle["test"]
+
+        dl = DataLoader(
+            dataset=self.test_ds,
+            batch_size=batch_size,
+            collate_fn=SoundscapeDataset.collate_fn,
+            shuffle=shuffle,
+        )
+
+        return dl
 
     def __repr__(self) -> str:
         return (
@@ -123,15 +86,87 @@ class SplitDataModule(pl.LightningModule):
         )
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
-def main(cfg: DictConfig):
-    split = hydra.utils.instantiate(cfg.data.datamodule, _recursive_=False)
-    split.setup()
-    dataloaders = split.train_dataloader()
+class BirdcallsDataModule(pl.LightningModule):
+    def __init__(
+        self,
+        datasets: DictConfig,
+        num_workers: DictConfig,
+        batch_size: DictConfig,
+        shuffle: DictConfig,
+        weighting: DictConfig,
+        **kwargs,
+    ):
+        super().__init__()
+        self.datasets = datasets
+        self.num_workers = num_workers
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.weighting = weighting
 
-    soundscapes_dl = dataloaders["train_soundscapes_dataloader"]
-    birdcalls_dl = dataloaders["train_birdcalls_dataloader"]
+        # These attributes will be populated after self.setup() call.
+        self.train_ds: Optional[Dataset] = None
+        self.val_ds: Optional[Dataset] = None
+        self.test_ds: Optional[Dataset] = None
 
+    def setup(self, stage: Optional[str] = None) -> None:
+        if stage is None or stage == "fit":
+            # Train
+            self.train_ds = hydra.utils.instantiate(self.datasets.train)
+            # Val
+            self.val_ds = hydra.utils.instantiate(self.datasets.val)
 
-if __name__ == "__main__":
-    main()
+        if stage is None or stage == "test":
+            self.test_ds = hydra.utils.instantiate(self.datasets.test)
+
+    def train_dataloader(
+        self,
+    ) -> Union[DataLoader, List[DataLoader], Dict[str, DataLoader]]:
+        batch_size = self.batch_size["train"]
+        weighting = self.weighting["train"]
+        shuffle = self.shuffle["train"]
+
+        dl = DataLoader(
+            dataset=self.train_ds,
+            batch_size=batch_size,
+            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            shuffle=shuffle,
+        )
+
+        return dl
+
+    def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+        batch_size = self.batch_size["val"]
+        weighting = self.weighting["val"]
+        shuffle = self.shuffle["val"]
+
+        dl = DataLoader(
+            dataset=self.val_ds,
+            batch_size=batch_size,
+            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            shuffle=shuffle,
+        )
+
+        return dl
+
+    def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+        batch_size = self.batch_size["test"]
+        weighting = self.weighting["test"]
+        shuffle = self.shuffle["test"]
+
+        dl = DataLoader(
+            dataset=self.test_ds,
+            batch_size=batch_size,
+            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            shuffle=shuffle,
+        )
+
+        return dl
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(\n"
+            f" {self.datasets=},\n"
+            f" {self.num_workers=},\n"
+            f" {self.batch_size=},\n"
+            f" {self.weighting=}\n)"
+        )

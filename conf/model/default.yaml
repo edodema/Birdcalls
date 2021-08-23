@@ -1,9 +1,11 @@
-detection:
-  _target_: src.pl_modules.model.Detection
+soundscapes:
+  _target_: src.pl_modules.module.SoundscapeDetection
   input_channels: 1
   n_feature: 8
 
-classification:
-  _target_: src.pl_modules.module.Classification
+birdcalls:
+  _target_: src.pl_modules.module.BirdcallClassification
   input_channels: 1
   n_feature: 8
+  out_features: 397 # Number of bird classes.
+

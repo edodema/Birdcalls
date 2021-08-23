@@ -1,4 +1,5 @@
 numpy
+black
 torch
 torchaudio
 pytorch_lightning
@@ -11,4 +12,4 @@ black
 matplotlib
 plotly
 librosa
-pyspark
+torchinfo
