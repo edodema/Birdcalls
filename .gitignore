@@ -417,7 +417,7 @@ TSWLatexianTemp*
 .cache
 .idea
 data/*
-models/*
+out/*
 outputs
 venv
 
