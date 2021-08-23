@@ -30,14 +30,14 @@ class Classification(Module):
 
         self.conv1 = nn.Conv2d(
             in_channels=1,
-            out_channels=3,
-            kernel_size=5,
-            stride=1,
+            out_channels=1,
+            kernel_size=30,
+            stride=10,
             padding=0,
         )
 
         self.fc_out = nn.Linear(
-            in_features=4881384, out_features=Classification.out_features
+            in_features=13100, out_features=Classification.out_features
         )
 
     def forward(self, xb):

@@ -242,7 +242,7 @@ def main(cfg: DictConfig):
     # # soundscapes_run(cfg)
 
     # Train birdcalls classification.
-    birdcalls_run(cfg)  # TODO: Memory error try with smaller output and on Colab.
+    birdcalls_run(cfg)
 
 
 if __name__ == "__main__":
