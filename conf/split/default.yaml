@@ -1,0 +1,29 @@
+build:
+  birdcalls:
+    _target_: src.common.split_datasets.birdcalls_split_dataset
+    p: .8
+    data_path: ${oc.env:BIRDCALLS_CSV}
+    split_path: ${oc.env:SPLIT_BIRDCALLS_CSV}
+    autosave: True
+
+  soundscapes:
+    _target_: src.common.split_datasets.soundscapes_split_dataset
+    p: .8
+    data_path: ${oc.env:SOUNDSCAPES_CSV}
+    split_path: ${oc.env:SPLIT_SOUNDSCAPES_CSV}
+    autosave: True
+
+retrieve:
+  birdcalls:
+    _target_: src.common.split_datasets.birdcalls_get_splits
+    split_path: ${oc.env:SPLIT_BIRDCALLS_CSV}
+    train_path: ${oc.env:BIRDCALLS_TRAIN_CSV}
+    eval_path: ${oc.env:BIRDCALLS_VAL_CSV}
+    autosave: True
+
+  soundscapes:
+    _target_: src.common.split_datasets.soundscapes_get_splits
+    split_path: ${oc.env:SPLIT_SOUNDSCAPES_CSV}
+    train_path: ${oc.env:SOUNDSCAPES_TRAIN_CSV}
+    eval_path: ${oc.env:SOUNDSCAPES_VAL_CSV}
+    autosave: True
