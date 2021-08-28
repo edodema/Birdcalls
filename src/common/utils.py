@@ -21,6 +21,16 @@ Utilities that come handy.
     - save_vocab
     - load_vocab
     - birdcall_vocabs
+
+- NN counting:
+    - cnn_size
+    - multiple_cnn_size
+    - pad_size
+    - pool_size
+    - fc_params
+    - cnn_params
+    - cnnxfc_params
+    - cnn_kernel
 """
 
 import os
@@ -394,11 +404,178 @@ def birdcall_vocabs(
     save_vocab(bird2idx, bird2idx_path)
 
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
-def main(cfg: DictConfig):
-    path = Path(cfg.data.birdcalls_datamodule.datasets.train.path)
-    plot_audio_len(path=path)
+def cnn_size(
+    input: Tuple[int, int],
+    kernel: Union[int, Tuple[int, int]],
+    padding: Union[int, Tuple[int, int]] = 0,
+    stride: Union[int, Tuple[int, int]] = 1,
+) -> Tuple[int, int]:
+    """
+    Return the size of the output of a convolutional layer.
+    :param input: Size of the input image.
+    :param kernel: Kernel size, it is assumed to be a square.
+    :param padding: Padding size.
+    :param stride: Stride.
+    :return: The output size.
+    """
+    if isinstance(kernel, int):
+        kernel = (kernel, kernel)
+
+    if isinstance(padding, int):
+        padding = (padding, padding)
+
+    if isinstance(stride, int):
+        stride = (stride, stride)
+
+    out_w = (input[0] - kernel[0] + 2 * padding[0]) / stride[0] + 1
+    out_h = (input[1] - kernel[1] + 2 * padding[1]) / stride[1] + 1
+    return int(out_w), int(out_h)
 
 
-if __name__ == "__main__":
-    main()
+def multiple_cnn_size(
+    input: Tuple[int, int],
+    kernel: Union[int, Tuple[int, int]],
+    padding: Union[int, Tuple[int, int]] = 0,
+    stride: Union[int, Tuple[int, int]] = 1,
+    n_convs: int = 1,
+) -> Tuple[int, int]:
+    """
+    Return the size of the output of more than one convolutional layer. This function can replace cnn_size.
+    :param input: Size of the input image.
+    :param kernel: Kernel size, it is assumed to be a square.
+    :param padding: Padding size.
+    :param stride: Stride.
+    :param n_convs: Number of convolutions.
+    :return: The output size.
+    """
+    if isinstance(kernel, int):
+        kernel = (kernel, kernel)
+
+    if isinstance(padding, int):
+        padding = (padding, padding)
+
+    if isinstance(stride, int):
+        stride = (stride, stride)
+
+    # Function that computes our function.
+    def f(i, k, p, s):
+        count = 0
+        for j in range(0, n_convs):
+            s_j = s ** j
+            count += -s_j * k + 2 * s_j * p + s_j * s
+        count += i
+        return count / (s ** n_convs)
+
+    out_w = f(i=input[0], k=kernel[0], p=padding[0], s=stride[0])
+    out_h = f(i=input[1], k=kernel[1], p=padding[1], s=stride[1])
+    return int(out_w), int(out_h)
+
+
+def pad_size(
+    input: Union[int, Tuple[int, int]],
+    padding: Union[int, Tuple[int, int]],
+    stride: Union[int, Tuple[int, int]] = 1,
+) -> Tuple[int, int]:
+    """
+    Return the size of the output of a convolutional layer.
+    :param input: Size of the input image.
+    :param padding: Pooling size.
+    :param stride: Stride.
+    :return: The output size.
+    """
+    if isinstance(padding, int):
+        padding = (padding, padding)
+
+    if isinstance(stride, int):
+        stride = (stride, stride)
+
+    out_w = (input[0] - padding[0]) / stride[0] + 1
+    out_h = (input[1] - padding[1]) / stride[1] + 1
+    return int(out_w), int(out_h)
+
+
+def pool_size(
+    input: Union[int, Tuple[int, int]],
+    pooling: Union[int, Tuple[int, int]],
+) -> Tuple[int, int]:
+    """
+    Return the size of the output of a convolutional layer.
+    :param input: Size of the input image.
+    :param pooling: Pooling size.
+    :param stride: Stride.
+    :return: The output size.
+    """
+    if isinstance(pooling, int):
+        pooling = (pooling, pooling)
+
+    out_w = input[0] / pooling[0]
+    out_h = input[1] / pooling[1]
+    return int(out_w), int(out_h)
+
+
+def fc_params(in_features: int, out_features: int, bias: bool = True):
+    """
+    Return the number of parameters in a linear layer.
+    :param in_features: Size of input vector.
+    :param out_features: Size of output vector.
+    :param bias: If true count bias too.
+    :return: The number of parameters.
+    """
+    m = out_features + 1 if bias else out_features
+    return in_features * m
+
+
+def cnn_params(kernel: int, in_channels: int, out_channels: int, bias: bool = True):
+    """
+    Return the number of parameters in a CNN.
+    :param kernel: Kernel size, it is assumed to be squared.
+    :param in_channels: Number of input channels.
+    :param out_channels: Number of output channels i.e. number of kernels.
+    :param bias: If true count bias as well.
+    :return: The number of parameters.
+    """
+    w = kernel * kernel * in_channels * out_channels
+    b = out_channels if bias else 0
+    return w + b
+
+
+def cnnxfc_params(
+    image_size: Tuple[int, int], n_channels: int, out_features: int, bias: bool = True
+):
+    """
+    Return the number of parameters in a CNN followe by a linear layer.
+    :param image_size: Size of the output of the CNN.
+    :param n_channels: Number of the image's channels.
+    :param out_features: Neurons in the linear layer.
+    :param bias: If true count bias.
+    :return: Number of parameters.
+    """
+    w, h = image_size
+    weights = w * h * n_channels * out_features
+    biases = out_features if bias else 0
+    return weights + biases
+
+
+def cnn_kernel(
+    input: Tuple[int, int],
+    output: Tuple[int, int],
+    padding: Union[int, Tuple[int, int]] = 0,
+    stride: Union[int, Tuple[int, int]] = 1,
+):
+    """
+    Given all the parameters of a convolution, except the filter's size, compute it.
+    :param input: Size of the input image.
+    :param output: Size of the feature map.
+    :param padding: Padding size.
+    :param stride: Stride.
+    :return: The kernel size.
+    """
+    if isinstance(padding, int):
+        padding = (padding, padding)
+
+    if isinstance(stride, int):
+        stride = (stride, stride)
+
+    kernel_w = input[0] + 2 * padding[0] - stride[0] * (output[0] - 1)
+    kernel_h = input[1] + 2 * padding[1] - stride[1] * (output[1] - 1)
+    return kernel_w, kernel_h

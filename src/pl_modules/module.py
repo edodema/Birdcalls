@@ -12,6 +12,7 @@ class SoundscapeDetection(pl.LightningModule):
     def __init__(self, **kwargs):
         super(SoundscapeDetection, self).__init__()
         self.save_hyperparameters()
+        print(self.hparams)
 
         self.model = model.Detection()
 

@@ -12,7 +12,6 @@ from src.common.utils import (
     BIRD2IDX,
     get_spectrogram,
     load_vocab,
-    plot_spectrogram,
 )
 
 
@@ -197,7 +196,7 @@ class BirdcallDataset(Dataset):
             target = BirdcallDataset.bird2idx[primary_label]
             targets.append(target)
         return {
-            "targets": one_hot(torch.tensor(targets), BirdcallDataset.n_classes),
+            "targets": torch.tensor(targets),
             "spectrograms": torch.stack(spectrograms),
         }
 

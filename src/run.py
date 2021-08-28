@@ -238,11 +238,11 @@ def birdcalls_run(cfg: DictConfig):
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
-    # # Train soundscapes detection.
-    # # soundscapes_run(cfg)
+    # Train soundscapes detection.
+    soundscapes_run(cfg)
 
     # Train birdcalls classification.
-    birdcalls_run(cfg)
+    # birdcalls_run(cfg)
 
 
 if __name__ == "__main__":
