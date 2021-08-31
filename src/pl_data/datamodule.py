@@ -29,12 +29,34 @@ class SoundscapesDataModule(pl.LightningModule):
     def setup(self, stage: Optional[str] = None) -> None:
         if stage is None or stage == "fit":
             # Train
-            self.train_ds = hydra.utils.instantiate(self.datasets.train)
+            if self.datasets.train.load:
+                # Load tensors if the dataset wants to.
+                self.train_ds = SoundscapeDataset.load(
+                    spectrograms_path=self.datasets.train.spectrograms_path,
+                    targets_path=self.datasets.train.targets_path,
+                )
+            else:
+                self.train_ds = hydra.utils.instantiate(self.datasets.train)
+
             # Val
-            self.val_ds = hydra.utils.instantiate(self.datasets.val)
+            if self.datasets.val.load:
+                # Load tensors if the dataset wants to.
+                self.val_ds = SoundscapeDataset.load(
+                    spectrograms_path=self.datasets.val.spectrograms_path,
+                    targets_path=self.datasets.val.targets_path,
+                )
+            else:
+                self.val_ds = hydra.utils.instantiate(self.datasets.val)
 
         if stage is None or stage == "test":
-            self.test_ds = hydra.utils.instantiate(self.datasets.test)
+            if self.datasets.test.load:
+                # Load tensors if the dataset wants to.
+                self.test_ds = SoundscapeDataset.load(
+                    spectrograms_path=self.datasets.test.spectrograms_path,
+                    targets_path=self.datasets.test.targets_path,
+                )
+            else:
+                self.test_ds = hydra.utils.instantiate(self.datasets.test)
 
     def train_dataloader(
         self,
@@ -45,7 +67,7 @@ class SoundscapesDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.train_ds,
             batch_size=batch_size,
-            collate_fn=SoundscapeDataset.collate_fn,
+            collate_fn=SoundscapeDataset.collate_fn(online=self.train_ds.online),
             shuffle=shuffle,
         )
 
@@ -58,7 +80,7 @@ class SoundscapesDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.val_ds,
             batch_size=batch_size,
-            collate_fn=SoundscapeDataset.collate_fn,
+            collate_fn=SoundscapeDataset.collate_fn(online=self.val_ds.online),
             shuffle=shuffle,
         )
 
@@ -71,7 +93,7 @@ class SoundscapesDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.test_ds,
             batch_size=batch_size,
-            collate_fn=SoundscapeDataset.collate_fn,
+            collate_fn=SoundscapeDataset.collate_fn(online=self.test_ds.online),
             shuffle=shuffle,
         )
 
@@ -111,12 +133,34 @@ class BirdcallsDataModule(pl.LightningModule):
     def setup(self, stage: Optional[str] = None) -> None:
         if stage is None or stage == "fit":
             # Train
-            self.train_ds = hydra.utils.instantiate(self.datasets.train)
+            if self.datasets.train.load:
+                # Load tensors if the dataset wants to.
+                self.train_ds = BirdcallDataset.load(
+                    spectrograms_path=self.datasets.train.spectrograms_path,
+                    targets_path=self.datasets.train.targets_path,
+                )
+            else:
+                self.train_ds = hydra.utils.instantiate(self.datasets.train)
+
             # Val
-            self.val_ds = hydra.utils.instantiate(self.datasets.val)
+            if self.datasets.val.load:
+                # Load tensors if the dataset wants to.
+                self.val_ds = BirdcallDataset.load(
+                    spectrograms_path=self.datasets.val.spectrograms_path,
+                    targets_path=self.datasets.val.targets_path,
+                )
+            else:
+                self.val_ds = hydra.utils.instantiate(self.datasets.val)
 
         if stage is None or stage == "test":
-            self.test_ds = hydra.utils.instantiate(self.datasets.test)
+            if self.datasets.test.load:
+                # Load tensors if the dataset wants to.
+                self.test_ds = BirdcallDataset.load(
+                    spectrograms_path=self.datasets.test.spectrograms_path,
+                    targets_path=self.datasets.test.targets_path,
+                )
+            else:
+                self.test_ds = hydra.utils.instantiate(self.datasets.test)
 
     def train_dataloader(
         self,
@@ -128,7 +172,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.train_ds,
             batch_size=batch_size,
-            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            collate_fn=BirdcallDataset.collate_fn(online=self.train_ds.online),
             shuffle=shuffle,
         )
 
@@ -142,7 +186,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.val_ds,
             batch_size=batch_size,
-            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            collate_fn=BirdcallDataset.collate_fn(online=self.val_ds.online),
             shuffle=shuffle,
         )
 
@@ -156,7 +200,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.test_ds,
             batch_size=batch_size,
-            collate_fn=BirdcallDataset.collate_fn(weighting=weighting),
+            collate_fn=BirdcallDataset.collate_fn(online=self.test_ds.online),
             shuffle=shuffle,
         )
 

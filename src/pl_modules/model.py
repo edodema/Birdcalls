@@ -338,7 +338,7 @@ class Detection(nn.Module):
             hidden_size=250,
             num_layers=1,
             bidirectional=True,
-            dropout=0.2,
+            dropout=0,  # Dropout should be 0 when there is only one layer.
         )
 
         self.fc = nn.Linear(in_features=500, out_features=1)
@@ -355,7 +355,7 @@ class Detection(nn.Module):
         out, weights = self.att(out, out, out)
         out, (h_n, c_n) = self.lstm(out)
         out = self.fc(out.squeeze())
-        print(out.shape)
+
         return out
 
 

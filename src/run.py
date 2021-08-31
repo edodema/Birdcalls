@@ -177,72 +177,74 @@ def birdcalls_run(cfg: DictConfig):
     datamodule: pl.LightningDataModule = hydra.utils.instantiate(
         cfg.data.birdcalls_datamodule, _recursive_=False
     )
+    datamodule.setup(stage="fit")
+    print(datamodule.train_ds[0])
 
-    # Instantiate model
-    hydra.utils.log.info(f"Instantiating <{cfg.model.birdcalls._target_}>")
-    model: pl.LightningModule = hydra.utils.instantiate(
-        cfg.model.birdcalls,
-        optim=cfg.optim,
-        data=cfg.data,
-        logging=cfg.logging,
-        _recursive_=False,
-    )
-
-    # Instantiate the callbacks
-    callbacks: List[Callback] = build_callbacks(cfg=cfg)
-
-    # Logger instantiation/configuration
-    wandb_logger = None
-    if "wandb" in cfg.logging:
-        hydra.utils.log.info(f"Instantiating <WandbLogger>")
-        wandb_config = cfg.logging.wandb
-        wandb_logger = WandbLogger(
-            **wandb_config,
-            tags=cfg.core.tags,
-        )
-        hydra.utils.log.info(f"W&B is now watching <{cfg.logging.wandb_watch.log}>!")
-        wandb_logger.watch(
-            model,
-            log=cfg.logging.wandb_watch.log,
-            log_freq=cfg.logging.wandb_watch.log_freq,
-        )
-
-    # Store the YaML config separately into the wandb dir
-    yaml_conf: str = OmegaConf.to_yaml(cfg=cfg)
-    (Path(wandb_logger.experiment.dir) / "hparams.yaml").write_text(yaml_conf)
-
-    hydra.utils.log.info(f"Instantiating the Trainer")
-
-    # The Lightning core, the Trainer
-    trainer = pl.Trainer(
-        default_root_dir=hydra_dir,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        deterministic=cfg.train.deterministic,
-        val_check_interval=cfg.logging.val_check_interval,
-        progress_bar_refresh_rate=cfg.logging.progress_bar_refresh_rate,
-        **cfg.train.pl_trainer,
-    )
-    log_hyperparameters(trainer=trainer, model=model, cfg=cfg)
-
-    hydra.utils.log.info(f"Starting training!")
-    trainer.fit(model=model, datamodule=datamodule)
-
-    # # hydra.utils.log.info(f"Starting testing!")
-    # # trainer.test(datamodule=datamodule)
-
-    # Logger closing to release resources/avoid multi-run conflicts
-    if wandb_logger is not None:
-        wandb_logger.experiment.finish()
+    # # Instantiate model
+    # hydra.utils.log.info(f"Instantiating <{cfg.model.birdcalls._target_}>")
+    # model: pl.LightningModule = hydra.utils.instantiate(
+    #     cfg.model.birdcalls,
+    #     optim=cfg.optim,
+    #     data=cfg.data,
+    #     logging=cfg.logging,
+    #     _recursive_=False,
+    # )
+    #
+    # # Instantiate the callbacks
+    # callbacks: List[Callback] = build_callbacks(cfg=cfg)
+    #
+    # # Logger instantiation/configuration
+    # wandb_logger = None
+    # if "wandb" in cfg.logging:
+    #     hydra.utils.log.info(f"Instantiating <WandbLogger>")
+    #     wandb_config = cfg.logging.wandb
+    #     wandb_logger = WandbLogger(
+    #         **wandb_config,
+    #         tags=cfg.core.tags,
+    #     )
+    #     hydra.utils.log.info(f"W&B is now watching <{cfg.logging.wandb_watch.log}>!")
+    #     wandb_logger.watch(
+    #         model,
+    #         log=cfg.logging.wandb_watch.log,
+    #         log_freq=cfg.logging.wandb_watch.log_freq,
+    #     )
+    #
+    # # Store the YaML config separately into the wandb dir
+    # yaml_conf: str = OmegaConf.to_yaml(cfg=cfg)
+    # (Path(wandb_logger.experiment.dir) / "hparams.yaml").write_text(yaml_conf)
+    #
+    # hydra.utils.log.info(f"Instantiating the Trainer")
+    #
+    # # The Lightning core, the Trainer
+    # trainer = pl.Trainer(
+    #     default_root_dir=hydra_dir,
+    #     logger=wandb_logger,
+    #     callbacks=callbacks,
+    #     deterministic=cfg.train.deterministic,
+    #     val_check_interval=cfg.logging.val_check_interval,
+    #     progress_bar_refresh_rate=cfg.logging.progress_bar_refresh_rate,
+    #     **cfg.train.pl_trainer,
+    # )
+    # log_hyperparameters(trainer=trainer, model=model, cfg=cfg)
+    #
+    # hydra.utils.log.info(f"Starting training!")
+    # trainer.fit(model=model, datamodule=datamodule)
+    #
+    # # # hydra.utils.log.info(f"Starting testing!")
+    # # # trainer.test(datamodule=datamodule)
+    #
+    # # Logger closing to release resources/avoid multi-run conflicts
+    # if wandb_logger is not None:
+    #     wandb_logger.experiment.finish()
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
     # Train soundscapes detection.
-    soundscapes_run(cfg)
+    # soundscapes_run(cfg)
 
     # Train birdcalls classification.
-    # birdcalls_run(cfg)
+    birdcalls_run(cfg)
 
 
 if __name__ == "__main__":

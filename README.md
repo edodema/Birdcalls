@@ -22,4 +22,5 @@ eBird seems to be better.
 - [ ] Organize methods in a clearer way as Pellacini did.
 - [ ] Write a function that precomputes tensors, this way training will be easier.
 - [ ]  A radix major implementation for ResNet (see paper) was too problematic due to computation
-- [ ] See Resnet paper 3.2 plain network recommendations
+- [ ] See Resnet paper 3.2 plain network recommendations.
+- [ ] During validation soundcalls datasets have been halved, birdcalls probablt thirded.

@@ -36,6 +36,11 @@ soundscapes_datamodule:
       path: ${oc.env:TRAIN_SOUNDSCAPES}
 #      csv_path: ${oc.env:SOUNDSCAPES_CSV}
       csv_path: ${oc.env:SOUNDSCAPES_TRAIN_CSV}
+      online: False
+      debug:
+      load: True
+      spectrograms_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
+      targets_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_TARGETS}
       train: True
 
     val:
@@ -43,6 +48,11 @@ soundscapes_datamodule:
       name: VAL_SOUNDSCAPES
       path: ${oc.env:VAL_SOUNDSCAPES}
       csv_path: ${oc.env:SOUNDSCAPES_VAL_CSV}
+      online: False
+      debug:
+      load: True
+      spectrograms_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
+      targets_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_TARGETS}
       train: False
 
 birdcalls_datamodule:
@@ -78,6 +88,12 @@ birdcalls_datamodule:
       path: ${oc.env:TRAIN_BIRDCALLS}
 #      csv_path: ${oc.env:BIRDCALLS_CSV}
       csv_path: ${oc.env:BIRDCALLS_TRAIN_CSV}
+      standard_len: 2
+      online: True
+      debug: 1000
+      load: False
+      spectrograms_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_SPECTROGRAMS}
+      targets_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_TARGETS}
       train: True
 
     val:
@@ -85,4 +101,10 @@ birdcalls_datamodule:
       name: VAL_BIRDCALLS
       path: ${oc.env:VAL_BIRDCALLS}
       csv_path: ${oc.env:BIRDCALLS_VAL_CSV}
+      standard_len: 2
+      online: True
+      debug: 428
+      load: False
+      spectrograms_path: ${oc.env:VAL_BIRDCALLS_DEBUG_SPECTROGRAMS}
+      targets_path: ${oc.env:VAL_BIRDCALLS_DEBUG_TARGETS}
       train: False
