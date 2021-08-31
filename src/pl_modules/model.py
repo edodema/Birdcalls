@@ -374,7 +374,7 @@ class Classification(nn.Module):
         )
 
         self.fc_out = nn.Linear(
-            in_features=13100, out_features=Classification.out_features
+            in_features=7480, out_features=Classification.out_features
         )
 
     def forward(self, xb):

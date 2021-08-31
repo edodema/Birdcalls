@@ -89,9 +89,9 @@ birdcalls_datamodule:
 #      csv_path: ${oc.env:BIRDCALLS_CSV}
       csv_path: ${oc.env:BIRDCALLS_TRAIN_CSV}
       standard_len: 2
-      online: True
+      online: False
       debug: 1000
-      load: False
+      load: True
       spectrograms_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_SPECTROGRAMS}
       targets_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_TARGETS}
       train: True
@@ -102,9 +102,9 @@ birdcalls_datamodule:
       path: ${oc.env:VAL_BIRDCALLS}
       csv_path: ${oc.env:BIRDCALLS_VAL_CSV}
       standard_len: 2
-      online: True
+      online: False
       debug: 428
-      load: False
+      load: True
       spectrograms_path: ${oc.env:VAL_BIRDCALLS_DEBUG_SPECTROGRAMS}
       targets_path: ${oc.env:VAL_BIRDCALLS_DEBUG_TARGETS}
       train: False
