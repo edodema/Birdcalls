@@ -21,6 +21,7 @@ Utilities that come handy.
     - save_vocab
     - load_vocab
     - birdcall_vocabs
+    - random_oversampler
 
 - NN counting:
     - cnn_size
@@ -38,6 +39,7 @@ from pathlib import Path
 from typing import Optional, Dict, Union, Callable, Tuple
 import dotenv
 import hydra
+import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 import torch
 import torchaudio
@@ -404,6 +406,44 @@ def birdcall_vocabs(
     save_vocab(bird2idx, bird2idx_path)
 
 
+def random_oversampler(
+    df: pd.DataFrame,
+    target: Tuple[str, Union[int, str]],
+    n_samples: int,
+    mode: str = "==",
+):
+    """
+    A random oversampler for unbalanced datasets.
+    :param df: DataFrame object.
+    :param target: A tuple containing the column of the dataframe and its respective class we want to augment.
+    :param n_samples: The number of samples we want to reach, often the length of the most represented class.
+    :param mode: Defines how we want to filter data:
+        - "==" Then we filter for samples whose value is equal to target[1].
+        - "!=" Then we filter for samples whose value is different from target[1].
+    :return: An augmented DataFrame.
+    """
+    target_class, target_value = target
+
+    # Sample random points from the target distribution and append them to df.
+    if mode == "==":
+        distribution = df[df[target_class] == target_value]
+    elif mode == "!=":
+        distribution = df[df[target_class] != target_value]
+    else:
+        raise Exception("Select a valid mode.")
+
+    n_distr = len(distribution)
+
+    assert (
+        n_samples > n_distr
+    ), "The number of samples for the chosen class is higher than the number to be reached, change n_samples."
+
+    samples = np.random.randint(0, n_distr, n_samples - n_distr, dtype=int)
+    new_samples = distribution.iloc[samples]
+
+    return df.append(other=new_samples, ignore_index=True)
+
+
 def cnn_size(
     input: Tuple[int, int],
     kernel: Union[int, Tuple[int, int]],
@@ -502,7 +542,6 @@ def pool_size(
     Return the size of the output of a convolutional layer.
     :param input: Size of the input image.
     :param pooling: Pooling size.
-    :param stride: Stride.
     :return: The output size.
     """
     if isinstance(pooling, int):

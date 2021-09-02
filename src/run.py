@@ -1,7 +1,5 @@
 from typing import List
 import hydra
-import omegaconf
-import torch
 from omegaconf import DictConfig, OmegaConf
 from hydra.core.hydra_config import HydraConfig
 from pathlib import Path
@@ -13,8 +11,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
 )
-from src.common.utils import PROJECT_ROOT, log_hyperparameters, plot_spectrogram
-from torchinfo import summary
+from src.common.utils import PROJECT_ROOT, log_hyperparameters
 
 # https://github.com/lucmos/nn-template/blob/main/src/run.py#L21
 def build_callbacks(cfg: DictConfig) -> List[Callback]:
@@ -239,10 +236,10 @@ def birdcalls_run(cfg: DictConfig):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
     # Train soundscapes detection.
-    # soundscapes_run(cfg)
+    soundscapes_run(cfg)
 
     # Train birdcalls classification.
-    birdcalls_run(cfg)
+    # birdcalls_run(cfg)
 
 
 if __name__ == "__main__":

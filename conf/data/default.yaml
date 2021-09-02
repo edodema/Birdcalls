@@ -39,8 +39,8 @@ soundscapes_datamodule:
       online: False
       debug:
       load: True
-      spectrograms_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_TARGETS}
+      spectrograms_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_SPECTROGRAMS_BALANCED}
+      targets_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_TARGETS_BALANCED}
       train: True
 
     val:
@@ -51,8 +51,8 @@ soundscapes_datamodule:
       online: False
       debug:
       load: True
-      spectrograms_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_TARGETS}
+      spectrograms_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_SPECTROGRAMS_BALANCED}
+      targets_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_TARGETS_BALANCED}
       train: False
 
 birdcalls_datamodule:

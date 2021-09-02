@@ -13,12 +13,13 @@ src.common.utils but there is a circular import with src.pl_data.dataset.
 import numpy as np
 import pandas as pd
 from src.pl_data.dataset import BirdcallDataset, SoundscapeDataset
-from typing import Optional
+from typing import Union
+from pathlib import Path
 
 
 def birdcalls_split_dataset(
-    data_path: str,
-    split_path: Optional[str],
+    data_path: Union[str, Path],
+    split_path: Union[str, Path, None] = None,
     p: float = 0.8,
     autosave: bool = True,
     **kwargs
@@ -36,7 +37,9 @@ def birdcalls_split_dataset(
     assert (
         0 <= p and p <= 1
     ), "The probability of a sample being in the train set must be between 0 and 1!"
-    dataset = BirdcallDataset(csv_path=data_path)
+    dataset = BirdcallDataset(
+        csv_path=data_path, online=True, debug=-1, load=False, standard_len=None
+    )
 
     # Randomly choose if each sample will be in the train or eval split.
     # 1 means that the value is in the train set and 0 that it is in the eval one.
@@ -58,8 +61,8 @@ def birdcalls_split_dataset(
 
 
 def soundscapes_split_dataset(
-    data_path: str,
-    split_path: Optional[str],
+    data_path: Union[str, Path],
+    split_path: Union[str, Path, None] = None,
     p: float = 0.8,
     autosave: bool = True,
     **kwargs
@@ -77,7 +80,7 @@ def soundscapes_split_dataset(
     assert (
         0 <= p and p <= 1
     ), "The probability of a sample being in the train set must be between 0 and 1!"
-    dataset = SoundscapeDataset(csv_path=data_path)
+    dataset = SoundscapeDataset(csv_path=data_path, online=True, debug=-1, load=False)
 
     # Randomly choose if each sample will be in the train or eval split.
     # 1 means that the value is in the train set and 0 that it is in the eval one.
@@ -99,9 +102,9 @@ def soundscapes_split_dataset(
 
 
 def birdcalls_get_splits(
-    split_path: str,
-    train_path: Optional[str] = None,
-    eval_path: Optional[str] = None,
+    split_path: Union[str, Path],
+    train_path: Union[str, Path, None] = None,
+    eval_path: Union[str, Path, None] = None,
     autosave: bool = False,
     **kwargs
 ):
@@ -125,9 +128,9 @@ def birdcalls_get_splits(
 
 
 def soundscapes_get_splits(
-    split_path: str,
-    train_path: Optional[str] = None,
-    eval_path: Optional[str] = None,
+    split_path: Union[str, Path],
+    train_path: Union[str, Path, None] = None,
+    eval_path: Union[str, Path, None] = None,
     autosave: bool = False,
     **kwargs
 ):
@@ -146,6 +149,6 @@ def soundscapes_get_splits(
     eval_df = df.loc[df["train"] == 0]
     train_df = df.loc[df["train"] == 1]
     if autosave:
-        train_df.to_csv(path_or_buf=train_path)
-        eval_df.to_csv(path_or_buf=eval_path)
+        train_df.to_csv(path_or_buf=train_path, index=False)
+        eval_df.to_csv(path_or_buf=eval_path, index=False)
     return {"train": train_df, "eval": eval_df}

@@ -1,10 +1,9 @@
-import os
 from pathlib import Path
 from typing import Dict, Union, Optional
 import numpy as np
 import pandas
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchaudio
 import pandas as pd
 from src.common.utils import (
@@ -21,7 +20,12 @@ from omegaconf import DictConfig
 
 class SoundscapeDataset(Dataset):
     def __init__(
-        self, csv_path: Optional[str], online: bool, debug: int, load: bool, **kwargs
+        self,
+        csv_path: Union[str, Path, None],
+        online: bool,
+        debug: int,
+        load: bool,
+        **kwargs
     ):
         """
         :param csv_path: Path of the training CSV file.
@@ -58,7 +62,7 @@ class SoundscapeDataset(Dataset):
         """
         row_id = df["row_id"].values.tolist()
         site = df["site"].values.tolist()
-        audio_id = df["audio_id"].values.astype(np.str).tolist()
+        audio_id = df["audio_id"].values.astype(str).tolist()
         seconds = df["seconds"].values
 
         # The "birds" column can have different type values in the CSV.
@@ -230,7 +234,7 @@ class BirdcallDataset(Dataset):
 
     def __init__(
         self,
-        csv_path: Optional[str],
+        csv_path: Union[str, Path, None],
         standard_len: Optional[int],
         online: bool,
         debug: int,
@@ -358,8 +362,7 @@ class BirdcallDataset(Dataset):
 
         return standard_waveform
 
-    @staticmethod
-    def collate_online(data):
+    def collate_online(self, data):
         """
         DataLoader's collate function, it computes the spectrogram on the fly.
         :param data: Input data
@@ -377,7 +380,7 @@ class BirdcallDataset(Dataset):
 
             # Directly load the audio file since we need to do some light preprocessing on the waveform.
             raw_waveform, sample_rate = torchaudio.load(audio_file)
-            waveform = BirdcallDataset.waveform_resize(
+            waveform = self.waveform_resize(
                 waveform=raw_waveform, sample_rate=sample_rate
             )
 
@@ -459,23 +462,65 @@ class BirdcallDataset(Dataset):
                 "targets": self.targets[item],
             }
 
-    @staticmethod
-    def collate_fn(online: bool):
+    def collate_fn(self, online: bool):
         """
         Wrapper for collate functions.
         :param online: If true we have an on-the-fly dataset.
         :return: A collate function.
         """
-        return BirdcallDataset.collate_online if online else None
+        return self.collate_online if online else None
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
+    # Train
+    print("Train")
     spectrograms = cfg.data.soundscapes_datamodule.datasets.train.spectrograms_path
     targets = cfg.data.soundscapes_datamodule.datasets.train.targets_path
 
+    path = Path(
+        "/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/soundscapes_balanced.csv"
+    )
+    out = "/home/edo/Documents/Code/Birdcalls/out/debug_datasets/train/soundscapes"
+
+    ds = SoundscapeDataset(csv_path=path, online=False, debug=-1, load=False)
+    print(ds.targets.shape)
+    print(ds.spectrograms.shape)
+
+    ds.save(
+        dir_path=out,
+        spectrograms_name="spectrograms_balanced.pt",
+        targets_name="targets_balanced.pt",
+    )
+
+    ds = SoundscapeDataset.load(spectrograms_path=spectrograms, targets_path=targets)
+
+    print(ds.targets.shape)
+    print(ds.spectrograms.shape)
+
+    # Val
+    print("Val")
+
+    spectrograms = cfg.data.soundscapes_datamodule.datasets.val.spectrograms_path
+    targets = cfg.data.soundscapes_datamodule.datasets.val.targets_path
+    path = Path(
+        "/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/soundscapes_balanced.csv"
+    )
+    out = "/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/soundscapes"
+
+    ds = SoundscapeDataset(csv_path=path, online=False, debug=-1, load=False)
+    print(ds.targets.shape)
+    print(ds.spectrograms.shape)
+
+    ds.save(
+        dir_path=out,
+        spectrograms_name="spectrograms_balanced.pt",
+        targets_name="targets_balanced.pt",
+    )
+
     ds = SoundscapeDataset.load(spectrograms_path=spectrograms, targets_path=targets)
     print(ds.targets.shape)
+    print(ds.spectrograms.shape)
 
 
 if __name__ == "__main__":
