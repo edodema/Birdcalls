@@ -20,8 +20,8 @@ soundscapes_datamodule:
     test: 12
 
   batch_size:
-    train: 2
-    val: 2
+    train: 32
+    val: 32
     test: 2
 
   shuffle:

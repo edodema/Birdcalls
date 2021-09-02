@@ -12,7 +12,6 @@ class SoundscapeDetection(pl.LightningModule):
     def __init__(self, **kwargs):
         super(SoundscapeDetection, self).__init__()
         self.save_hyperparameters()
-        print(self.hparams)
 
         self.model = model.Detection()
 
@@ -25,7 +24,8 @@ class SoundscapeDetection(pl.LightningModule):
 
     def forward(self, xb):
         logits = self.model(xb)
-        preds = torch.argmax(logits, dim=-1)
+        # The loss function does implement the sigmoid by itself.
+        preds = torch.sigmoid(logits).squeeze().preds.ge(0.5).to(torch.long)
         return logits, preds
 
     def step(self, x: torch.Tensor, y: torch.Tensor):
