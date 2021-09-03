@@ -172,7 +172,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.train_ds,
             batch_size=batch_size,
-            collate_fn=self.collate_fn(online=self.train_ds.online),
+            collate_fn=self.train_ds.collate_fn(online=self.train_ds.online),
             shuffle=shuffle,
         )
 
@@ -186,7 +186,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.val_ds,
             batch_size=batch_size,
-            collate_fn=self.collate_fn(online=self.val_ds.online),
+            collate_fn=self.val_ds.collate_fn(online=self.val_ds.online),
             shuffle=shuffle,
         )
 
@@ -200,7 +200,7 @@ class BirdcallsDataModule(pl.LightningModule):
         dl = DataLoader(
             dataset=self.test_ds,
             batch_size=batch_size,
-            collate_fn=self.collate_fn(online=self.test_ds.online),
+            collate_fn=self.test_ds.collate_fn(online=self.test_ds.online),
             shuffle=shuffle,
         )
 
