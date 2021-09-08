@@ -22,6 +22,7 @@ Utilities that come handy.
     - load_vocab
     - birdcall_vocabs
     - random_oversampler
+    - split_dataset
 
 - NN counting:
     - cnn_size
@@ -103,7 +104,7 @@ assert (
 
 os.chdir(PROJECT_ROOT)
 
-# Get global variable.
+# Get global variables.
 TRAIN_BIRDCALLS: Path = Path(get_env("TRAIN_BIRDCALLS"))
 assert (
     TRAIN_BIRDCALLS.exists()
@@ -444,6 +445,40 @@ def random_oversampler(
     return df.append(other=new_samples, ignore_index=True)
 
 
+def split_dataset(
+    csv_path: Union[str, Path],
+    save_path_train: Union[str, Path, None] = None,
+    save_path_eval: Union[str, Path, None] = None,
+    p: float = 0.8,
+    autosave: bool = False,
+):
+    """
+    Split a CSV dataset in train and evaluation according to percentage p.
+    :param csv_path: Path of the dataset as a CSV file.
+    :param save_path_train: Path to save to the train CSV file.
+    :param save_path_eval: Path to save to the eval CSV file.
+    :param p: Percentage of the train set expressed as a float.
+    :param autosave: If true save the files, save_path_train and save_path_eval must be specified.
+    :return: Train and eval dataframes.
+    """
+    assert (
+        0 <= p and p <= 1
+    ), "The probability of a sample being in the train set must be between 0 and 1!"
+
+    df = pd.read_csv(csv_path)
+    df = df.sample(frac=1)
+
+    idx = int(len(df) * p)
+    train_df = df[:idx]
+    eval_df = df[idx:]
+
+    if autosave:
+        train_df.to_csv(path_or_buf=save_path_train, index=False)
+        eval_df.to_csv(path_or_buf=save_path_eval, index=False)
+
+    return train_df, eval_df
+
+
 def cnn_size(
     input: Tuple[int, int],
     kernel: Union[int, Tuple[int, int]],
@@ -618,3 +653,21 @@ def cnn_kernel(
     kernel_w = input[0] + 2 * padding[0] - stride[0] * (output[0] - 1)
     kernel_h = input[1] + 2 * padding[1] - stride[1] * (output[1] - 1)
     return kernel_w, kernel_h
+
+
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
+def main(cfg: DictConfig):
+    # file = cfg.data.joint_datamodule.datasets.train.csv_path
+    # file = "/home/edo/Documents/Code/Birdcalls/out/soundcalls_balanced.csv"
+    # train, eval = split_dataset(
+    #     file,
+    #     save_path_train="/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/soundscapes_balanced.csv",
+    #     save_path_eval="/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/soundscapes_balanced.csv",
+    #     autosave=True,
+    # )
+    # print(train, eval)
+    pass
+
+
+if __name__ == "__main__":
+    main()

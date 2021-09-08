@@ -5,12 +5,12 @@ core:
     - mytag
 
 defaults:
+  - _self_
   - data: default
   - hydra: default
   - logging: default
   - model: default
   - optim: default
-  - split: default
   - train: default
 #    Uncomment this parameter to get parallel job running
 #  - hydra/launcher: joblib
