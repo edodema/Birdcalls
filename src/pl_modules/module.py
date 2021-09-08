@@ -176,7 +176,6 @@ class JointClassification(pl.LightningModule):
 
     def step(self, x: torch.Tensor, y: torch.Tensor):
         logits, preds = self(x)
-        print("A" * 3000)
         loss = self.loss(logits, y)
         return {"logits": logits, "preds": preds, "loss": loss}
 
