@@ -40,10 +40,6 @@ class CNNAtt(nn.Module):
 
         # Are used three CNNs since is the minimum needed to have a bottleneck and return to the original channel size,
         # yet is still possible to learn the identity function as a composition of f and its inverse.
-        channels_start, channels_mid, channels_end = 1, 3, 1
-        kernel_start, kernel_mid, kernel_end = kernels
-        padding_start, padding_mid, padding_end = paddings
-        stride_start, stride_mid, stride_end = strides
 
         # Query
         self.cnn_q = self.get_seq(
@@ -360,28 +356,41 @@ class Detection(nn.Module):
 
 
 class Classification(nn.Module):
-    out_features = 397
-
     def __init__(self, out_features: int, **kwargs):
         super().__init__()
 
-        self.conv1 = nn.Conv2d(
-            in_channels=1,
-            out_channels=1,
-            kernel_size=(30, 30),
-            stride=(10, 10),
-            padding=0,
+        self.ext = Extraction(
+            image_shape=(1, 128, 313),  # 3751 for Birdcalls and 313 for Joint.
+            att_channels=[1, 3, 1],
+            att_kernels=[1, 3, 1],
+            att_paddings=[0, 1, 0],
+            att_strides=[1, 1, 1],
+            att_num_heads=1,
+            pool_att=1,
+            res_kernels=[5, 5, 5],
+            pool=3,
         )
 
-        self.fc_out = nn.Linear(
-            in_features=7480, out_features=Classification.out_features
+        self.gru = nn.GRU(
+            input_size=384,  # 4960 or 384
+            hidden_size=512,
+            num_layers=1,
+            bidirectional=True,
+            dropout=0,  # Dropout should be 0 when there is only one layer.
         )
+
+        self.fc = nn.Linear(in_features=1024, out_features=out_features)
 
     def forward(self, xb):
-        out = self.conv1(xb)
+        # Feature extraction backbone.
+        out = self.ext(xb)
 
-        # Reshape
-        b, c, h, w = out.shape
-        out = out.reshape((b, c * h * w))
-        logits = self.fc_out(out)
+        # Reshape.
+        b, c, w, h = out.shape
+        out = out.reshape(b, 1, c * w * h).transpose(0, 1)
+
+        # Prediction head.
+        # out, weights = self.att(out, out, out)
+        out, _ = self.gru(out)
+        logits = self.fc(out.squeeze())
         return logits

@@ -1,11 +1,11 @@
 soundscapes:
   _target_: src.pl_modules.module.SoundscapeDetection
-  input_channels: 1
-  n_feature: 8
 
 birdcalls:
   _target_: src.pl_modules.module.BirdcallClassification
-  input_channels: 1
-  n_feature: 8
   out_features: 397 # Number of bird classes.
+
+joint:
+  _target_: src.pl_modules.module.JointClassification
+  out_features: 398 # Number of bird classes + nocall.
 
