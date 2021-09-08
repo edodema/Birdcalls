@@ -6,7 +6,6 @@ pytorch_lightning
 hydra-core
 wandb
 streamlit
-dvc
 python-dotenv
 black
 matplotlib
