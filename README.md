@@ -24,3 +24,5 @@ eBird seems to be better.
 - [ ]  A radix major implementation for ResNet (see paper) was too problematic due to computation
 - [ ] See Resnet paper 3.2 plain network recommendations.
 - [ ] During validation soundcalls datasets have been halved, birdcalls probablt thirded.
+- [ ] Occam's razor.
+- [ ] In env.template write the path as an explanation of the variable
