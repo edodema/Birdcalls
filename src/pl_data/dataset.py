@@ -706,25 +706,24 @@ def main(cfg: DictConfig):
     #     spectrograms_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/joint/spectrograms_balanced.pt",
     #     targets_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/joint/targets_balanced.pt",
     # )
-    #
-    # spectrograms = cfg.data.joint_datamodule.datasets.train.spectrograms_path
-    # targets = cfg.data.joint_datamodule.datasets.train.targets_path
-    #
-    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-    #
-    # print(ds.spectrograms.shape)
-    # print(ds.targets)
-    #
-    # print("LOAD VAL")
-    #
-    # spectrograms = cfg.data.joint_datamodule.datasets.val.spectrograms_path
-    # targets = cfg.data.joint_datamodule.datasets.val.targets_path
-    #
-    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-    #
-    # print(ds.spectrograms.shape)
-    # print(ds.targets)
-    pass
+
+    spectrograms = cfg.data.joint_datamodule.datasets.train.spectrograms_path
+    targets = cfg.data.joint_datamodule.datasets.train.targets_path
+
+    ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
+
+    print(ds.spectrograms.shape)
+    print(ds.targets.shape)
+
+    print("LOAD VAL")
+
+    spectrograms = cfg.data.joint_datamodule.datasets.val.spectrograms_path
+    targets = cfg.data.joint_datamodule.datasets.val.targets_path
+
+    ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
+
+    print(ds.spectrograms.shape)
+    print(ds.targets.shape)
 
 
 if __name__ == "__main__":

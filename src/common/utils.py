@@ -138,7 +138,7 @@ def log_hyperparameters(
     This method controls which parameters from Hydra config are saved by Lightning loggers.
     Additionally saves:
         - sizes of train, val, test dataset
-        - number of trainable model parameters
+        - number of trainable models parameters
     Args:
         cfg (DictConfig): [description]
         model (pl.LightningModule): [description]
@@ -146,7 +146,7 @@ def log_hyperparameters(
     """
     hparams = OmegaConf.to_container(cfg, resolve=True)
 
-    # save number of model parameters
+    # save number of models parameters
     hparams[f"{STATS_KEY}/params_total"] = sum(p.numel() for p in model.parameters())
     hparams[f"{STATS_KEY}/params_trainable"] = sum(
         p.numel() for p in model.parameters() if p.requires_grad
@@ -159,7 +159,7 @@ def log_hyperparameters(
     trainer.logger.log_hyperparams(hparams)
 
     # disable logging any more hyperparameters for all loggers
-    # (this is just a trick to prevent trainer from logging hparams of model, since we already did that above)
+    # (this is just a trick to prevent trainer from logging hparams of models, since we already did that above)
     trainer.logger.log_hyperparams = lambda params: None
 
 
@@ -409,40 +409,91 @@ def birdcall_vocabs(
 
 def random_oversampler(
     df: pd.DataFrame,
-    target: Tuple[str, Union[int, str]],
-    n_samples: int,
-    mode: str = "==",
+    target: Tuple[str, Union[int, str, None]],
+    n_samples: Optional[int] = None,
+    mode: Optional[str] = None,
 ):
     """
     A random oversampler for unbalanced datasets.
     :param df: DataFrame object.
     :param target: A tuple containing the column of the dataframe and its respective class we want to augment.
+    If no target is specified then all classes are automatically balanced to the most frequent one.
     :param n_samples: The number of samples we want to reach, often the length of the most represented class.
     :param mode: Defines how we want to filter data:
         - "==" Then we filter for samples whose value is equal to target[1].
         - "!=" Then we filter for samples whose value is different from target[1].
     :return: An augmented DataFrame.
     """
-    target_class, target_value = target
 
-    # Sample random points from the target distribution and append them to df.
-    if mode == "==":
-        distribution = df[df[target_class] == target_value]
-    elif mode == "!=":
-        distribution = df[df[target_class] != target_value]
-    else:
-        raise Exception("Select a valid mode.")
-
-    n_distr = len(distribution)
+    # - If target value is None n_samples and mode must be too.
+    # - If target value is specified n_samples and mode must be too.
+    phi = bool(target[1]) or (not n_samples and not mode)
+    psi = not target[1] or (bool(n_samples) and bool(mode))
 
     assert (
-        n_samples > n_distr
-    ), "The number of samples for the chosen class is higher than the number to be reached, change n_samples."
+        phi and psi
+    ), "Either target, n_samples and mode are specified or none of them is."
 
-    samples = np.random.randint(0, n_distr, n_samples - n_distr, dtype=int)
-    new_samples = distribution.iloc[samples]
+    if target[1]:
+        # We specified a number to oversample to.
 
-    return df.append(other=new_samples, ignore_index=True)
+        target_class, target_value = target
+
+        # Sample random points from the target distribution and append them to df.
+        if mode == "==":
+            distribution = df[df[target_class] == target_value]
+        elif mode == "!=":
+            distribution = df[df[target_class] != target_value]
+        else:
+            raise Exception("Select a valid mode.")
+
+        n_distr = len(distribution)
+
+        assert (
+            n_samples > n_distr
+        ), "The number of samples for the chosen class is higher than the number to be reached, change n_samples."
+
+        samples = np.random.randint(0, n_distr, n_samples - n_distr, dtype=int)
+        new_samples = distribution.iloc[samples]
+
+        df = df.append(other=new_samples, ignore_index=True)
+    else:
+        # We balance all classes.
+        target_class = target[0]
+        col = df[target_class].values
+
+        # If there are elements split by spaces (as in birds) we only keep the primary label.
+        if isinstance(col[0], str):
+
+            def f(x: str):
+                return x.split()[0]
+
+        else:
+
+            def f(_):
+                pass
+
+        fv = np.vectorize(f)
+        col = fv(col)
+
+        # Take the most frequent class.
+        count = Counter(col)
+        most_common_class, most_common_n = count.most_common(1)[0]
+
+        # Oversampling for each class.
+        for k, v in count.items():
+            # Repeat samples.
+            to_n = most_common_n - v
+            if to_n == 0:
+                continue
+
+            # Data we want to sample from.
+            distribution = df[fv(df[target_class]) == k]
+            samples = np.random.randint(0, v, to_n, dtype=int)
+            new_samples = distribution.iloc[samples]
+            df = df.append(other=new_samples, ignore_index=True)
+
+    return df
 
 
 def split_dataset(
@@ -653,21 +704,3 @@ def cnn_kernel(
     kernel_w = input[0] + 2 * padding[0] - stride[0] * (output[0] - 1)
     kernel_h = input[1] + 2 * padding[1] - stride[1] * (output[1] - 1)
     return kernel_w, kernel_h
-
-
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
-def main(cfg: DictConfig):
-    # file = cfg.data.joint_datamodule.datasets.train.csv_path
-    # file = "/home/edo/Documents/Code/Birdcalls/out/soundcalls_balanced.csv"
-    # train, eval = split_dataset(
-    #     file,
-    #     save_path_train="/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/soundscapes_balanced.csv",
-    #     save_path_eval="/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/soundscapes_balanced.csv",
-    #     autosave=True,
-    # )
-    # print(train, eval)
-    pass
-
-
-if __name__ == "__main__":
-    main()

@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from src.pl_data.dataset import BirdcallDataset, SoundscapeDataset, JointDataset
 
 
-class SoundscapesDataModule(pl.LightningModule):
+class SoundscapesDataModule(pl.LightningDataModule):
     def __init__(
         self,
         datasets: DictConfig,
@@ -108,7 +108,7 @@ class SoundscapesDataModule(pl.LightningModule):
         )
 
 
-class BirdcallsDataModule(pl.LightningModule):
+class BirdcallsDataModule(pl.LightningDataModule):
     def __init__(
         self,
         datasets: DictConfig,
@@ -216,7 +216,7 @@ class BirdcallsDataModule(pl.LightningModule):
         )
 
 
-class JointDataModule(pl.LightningModule):
+class JointDataModule(pl.LightningDataModule):
     def __init__(
         self,
         datasets: DictConfig,

@@ -26,3 +26,6 @@ eBird seems to be better.
 - [ ] During validation soundcalls datasets have been halved, birdcalls probablt thirded.
 - [ ] Occam's razor.
 - [ ] In env.template write the path as an explanation of the variable
+- [ ] When there are imbalances accuracy is useless.
+- [ ] Address using too small batches issue.
+- [ ] In the future works add what you could have done with more resources and thresholding.
