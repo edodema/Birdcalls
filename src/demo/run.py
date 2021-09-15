@@ -1,26 +1,37 @@
-import sys
-# sys.path.extend(["/home/edo/Documents/Code/Birdcalls"])
-
+import numpy as np
 import streamlit as st
-# from src.demo.utils import get_sample_joint
+import hydra
+import torch
+from librosa import power_to_db
+from src.demo.utils import MODES, get_hydra_cfg, get_sample, get_tensor, get_csv_path
 
-# # Constants.
-# EMPTY_MODE = "-"
-# SPLIT_MODE = "Split"
-# JOINT_MODE = "Joint"
-#
-# # Basic UI elements.
-# # Sidebar.
-# mode = st.sidebar.selectbox(
-#     "Select which model to try.", (EMPTY_MODE, SPLIT_MODE, JOINT_MODE)
-# )
-# run = st.sidebar.button("Run")
-# file_uploader = st.sidebar.file_uploader("File upload")
-#
-# if mode == JOINT_MODE:
-#     # Get random audio sample from validation set.
-#     x = get_sample_joint()
-#     st.write(x)
+cfg = get_hydra_cfg()
 
-if __name__ == "__main__":
-    print(sys.path)
+# Basic UI elements.
+mode = st.sidebar.selectbox(
+    "Select which model to try.",
+    (
+        MODES["empty"],
+        MODES["soundscapes"],
+        MODES["birdcalls"],
+        MODES["split"],
+        MODES["joint"],
+    ),
+)
+run = st.sidebar.button("Run")
+file_uploader = st.sidebar.file_uploader("File upload")
+
+# Get file path.
+csv_path = get_csv_path(mode)
+if not csv_path:
+    st.stop()
+
+# Get a random audio sample from the set.
+sample = get_sample(csv_path=csv_path)
+spectrogram, target = get_tensor(sample=sample, mode=mode)
+
+spec = np.transpose(power_to_db(spectrogram[0].numpy()), axes=(1, 2, 0))
+spec = (spec - np.min(spec)) / (np.max(spec) - np.min(spec))
+st.image(spec)
+
+# TODO: images are pretty bad, add audio https://discuss.streamlit.io/t/audio-display/7806
