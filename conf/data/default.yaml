@@ -85,11 +85,11 @@ birdcalls_datamodule:
       _target_: src.pl_data.dataset.BirdcallDataset
       name: TRAIN_BIRDCALLS
       path: ${oc.env:TRAIN_BIRDCALLS}
-      csv_path: ${oc.env:BIRDCALLS_TRAIN_CSV}
+      csv_path: ${oc.env:BIRDCALLS_CSV}
       standard_len: 1
-      online: False
+      online: True
       debug: 800
-      load: True
+      load: False
       spectrograms_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_SPECTROGRAMS}
       targets_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_TARGETS}
       train: True

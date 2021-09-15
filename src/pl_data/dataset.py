@@ -55,7 +55,7 @@ class SoundscapeDataset(Dataset):
             self._init_data(df)
 
     @staticmethod
-    def _get_columns(df: pandas.DataFrame):
+    def get_columns(df: pandas.DataFrame):
         """
         Extract the columns from a dataframe, we can have the original whole CSV's df or a preprocessed split.
         :param df: DataFrame.
@@ -75,7 +75,7 @@ class SoundscapeDataset(Dataset):
         return row_id, site, audio_id, seconds, birds
 
     @staticmethod
-    def _get_tensor_data(audio_id, seconds, birds):
+    def get_tensor_data(audio_id, seconds, birds):
         """
         Compute tensors from the data.
         :param audio_id: audio_id column.
@@ -111,13 +111,13 @@ class SoundscapeDataset(Dataset):
                 self.audio_id,
                 self.seconds,
                 self.birds,
-            ) = SoundscapeDataset._get_columns(df)
+            ) = SoundscapeDataset.get_columns(df)
 
             self.len = len(self.birds)
         else:
             # The online initialization is a base step, we need to do something more.
-            row_id, site, audio_id, seconds, birds = SoundscapeDataset._get_columns(df)
-            self.spectrograms, self.targets = SoundscapeDataset._get_tensor_data(
+            row_id, site, audio_id, seconds, birds = SoundscapeDataset.get_columns(df)
+            self.spectrograms, self.targets = SoundscapeDataset.get_tensor_data(
                 audio_id=audio_id, seconds=seconds, birds=birds
             )
 
@@ -249,12 +249,11 @@ class BirdcallDataset(Dataset):
 
         self.spectrograms: torch.Tensor
         self.targets: torch.Tensor
+        # Set the standard length, this is useful only for the UI.
+        self.standard_len = standard_len * 60
 
         # We do something only if load is False.
         if not load:
-            # Set the standard length.
-            self.standard_len = standard_len * 60
-
             df = pd.read_csv(csv_path)
 
             if debug and debug > 0:
@@ -262,6 +261,22 @@ class BirdcallDataset(Dataset):
                 df = df.sample(frac=1).iloc[:debug]
 
             self._init_data(df)
+
+    @staticmethod
+    def get_columns(df: pd.DataFrame):
+        """
+        Extract the columns from a dataframe, we can have the original whole CSV's df or a preprocessed split.
+        :param df: DataFrame.
+        :return: The columns of our CSV as numpy arrays.
+        """
+        primary_label = df["primary_label"].values
+        print(primary_label)
+        scientific_name = df["scientific_name"].values
+        common_name = df["common_name"].values
+        filename = df["filename"].values
+        rating = df["rating"].values
+
+        return primary_label, scientific_name, common_name, filename, rating
 
     def _init_data(self, df: pandas.DataFrame):
         """
@@ -271,25 +286,32 @@ class BirdcallDataset(Dataset):
         """
         if self.online:
             # We do not need to compute anything.
-            self.primary_label = df["primary_label"].values
-            self.scientific_name = df["scientific_name"].values
-            self.common_name = df["common_name"].values
-            self.filename = df["filename"].values
-            self.rating = df["rating"].values
+            (
+                self.primary_label,
+                self.scientific_name,
+                self.common_name,
+                self.filename,
+                self.rating,
+            ) = BirdcallDataset.get_columns(df)
 
             self.len = len(self.rating)
         else:
             # We directly compute our tensors.
-            primary_labels = df["primary_label"].values
-            filenames = df["filename"].values
+            (
+                primary_label,
+                scientific_name,
+                common_name,
+                filename,
+                rating,
+            ) = BirdcallDataset.get_columns(df)
 
-            self.spectrograms, self.targets = self._get_tensor_data(
-                primary_labels=primary_labels, filenames=filenames
+            self.spectrograms, self.targets = self.get_tensor_data(
+                primary_labels=primary_label, filenames=filename
             )
 
             self.len = len(self.targets)
 
-    def _get_tensor_data(self, primary_labels, filenames):
+    def get_tensor_data(self, primary_labels, filenames):
         """
         Compute tensors from the data.
         :param primary_labels: Label of each bird, used to retrieve filepath.
@@ -505,7 +527,7 @@ class JointDataset(Dataset):
             self._init_data(df)
 
     @staticmethod
-    def _get_columns(df: pandas.DataFrame):
+    def get_columns(df: pandas.DataFrame):
         """
         Extract the columns from a dataframe, we can have the original whole CSV's df or a preprocessed split.
         :param df: DataFrame.
@@ -534,7 +556,7 @@ class JointDataset(Dataset):
         return row_id, site, audio_id, seconds, birds
 
     @staticmethod
-    def _get_tensor_data(audio_id, seconds, birds):
+    def get_tensor_data(audio_id, seconds, birds):
         """
         Compute tensors from the data.
         :param audio_id: audio_id column.
@@ -570,13 +592,13 @@ class JointDataset(Dataset):
                 self.audio_id,
                 self.seconds,
                 self.birds,
-            ) = JointDataset._get_columns(df)
+            ) = JointDataset.get_columns(df)
 
             self.len = len(self.birds)
         else:
             # The online initialization is a base step, we need to do something more.
-            row_id, site, audio_id, seconds, birds = JointDataset._get_columns(df)
-            self.spectrograms, self.targets = JointDataset._get_tensor_data(
+            row_id, site, audio_id, seconds, birds = JointDataset.get_columns(df)
+            self.spectrograms, self.targets = JointDataset.get_tensor_data(
                 audio_id=audio_id, seconds=seconds, birds=birds
             )
             self.len = len(self.targets)
@@ -681,9 +703,9 @@ class JointDataset(Dataset):
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
-    # joint = hydra.utils.instantiate(
-    #     cfg.data.joint_datamodule.datasets.train, _recursive_=False
-    # )
+    birdcalls = hydra.utils.instantiate(
+        cfg.data.birdcalls_datamodule.datasets.train, _recursive_=False
+    )
     #
     # print(joint.spectrograms.shape)
     # print(joint.targets.shape)
@@ -707,23 +729,23 @@ def main(cfg: DictConfig):
     #     targets_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/joint/targets_balanced.pt",
     # )
 
-    spectrograms = cfg.data.joint_datamodule.datasets.train.spectrograms_path
-    targets = cfg.data.joint_datamodule.datasets.train.targets_path
-
-    ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-
-    print(ds.spectrograms.shape)
-    print(ds.targets.shape)
-
-    print("LOAD VAL")
-
-    spectrograms = cfg.data.joint_datamodule.datasets.val.spectrograms_path
-    targets = cfg.data.joint_datamodule.datasets.val.targets_path
-
-    ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-
-    print(ds.spectrograms.shape)
-    print(ds.targets.shape)
+    # spectrograms = cfg.data.joint_datamodule.datasets.train.spectrograms_path
+    # targets = cfg.data.joint_datamodule.datasets.train.targets_path
+    #
+    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
+    #
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
+    #
+    # print("LOAD VAL")
+    #
+    # spectrograms = cfg.data.joint_datamodule.datasets.val.spectrograms_path
+    # targets = cfg.data.joint_datamodule.datasets.val.targets_path
+    #
+    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
+    #
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
 
 
 if __name__ == "__main__":

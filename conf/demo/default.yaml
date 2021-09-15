@@ -1,0 +1,10 @@
+mode:
+  empty: "-"
+  soundscapes: "Soundscapes"
+  birdcalls: "Birdcalls"
+  split: "Split"
+  joint: "Joint"
+csv:
+  soundscapes: ${oc.env:SOUNDSCAPES_CSV}
+  birdcalls: ${oc.env:BIRDCALLS_CSV}
+  joint: ${oc.env:SOUNDSCAPES_CSV}
