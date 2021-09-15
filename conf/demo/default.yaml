@@ -4,7 +4,17 @@ mode:
   birdcalls: "Birdcalls"
   split: "Split"
   joint: "Joint"
+
 csv:
   soundscapes: ${oc.env:SOUNDSCAPES_CSV}
   birdcalls: ${oc.env:BIRDCALLS_CSV}
   joint: ${oc.env:SOUNDSCAPES_CSV}
+
+audio_dir:
+  birdcalls: ${oc.env:TRAIN_BIRDCALLS}
+  soundscapes: ${oc.env:TRAIN_SOUNDSCAPES}
+
+checkpoint:
+  classification:
+  detection:
+  joint: ${oc.env:MODEL_JOINT}

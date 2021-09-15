@@ -29,3 +29,5 @@ eBird seems to be better.
 - [ ] When there are imbalances accuracy is useless.
 - [ ] Address using too small batches issue.
 - [ ] In the future works add what you could have done with more resources and thresholding.
+- [ ] Export the plots in W&B and combine them.
+- [ ] Specify seed, our goal is not to have a good on-the-wild ai.

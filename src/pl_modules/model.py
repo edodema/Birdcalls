@@ -82,9 +82,9 @@ class CNNAtt(nn.Module):
         )
 
     def forward(self, xb):
-        q = self.cnn_q(xb).squeeze()
-        k = self.cnn_k(xb).squeeze()
-        v = self.cnn_v(xb).squeeze()
+        q = self.cnn_q(xb).squeeze(dim=1)
+        k = self.cnn_k(xb).squeeze(dim=1)
+        v = self.cnn_v(xb).squeeze(dim=1)
 
         # Transpose since batch first is usually faster, in att2 to swap row with columns.
         att1, _ = self.att1(q, k, v)
@@ -306,7 +306,7 @@ class Extraction(nn.Module):
         return out
 
 
-class Detection(nn.Module):
+class SoundscapeModel(nn.Module):
     # Shape of the input image (c,h,w)
     shape = torch.Size((1, 128, 313))
 
@@ -355,7 +355,7 @@ class Detection(nn.Module):
         return out
 
 
-class Classification(nn.Module):
+class BirdcallModel(nn.Module):
     def __init__(self, out_features: int, **kwargs):
         super().__init__()
 
@@ -377,6 +377,47 @@ class Classification(nn.Module):
             num_layers=1,
             bidirectional=True,
             dropout=0,  # Dropout should be 0 when there is only one layer.
+        )
+
+        self.fc = nn.Linear(in_features=1024, out_features=out_features)
+
+    def forward(self, xb):
+        # Feature extraction backbone.
+        out = self.ext(xb)
+
+        # Reshape.
+        b, c, w, h = out.shape
+        out = out.reshape(b, 1, c * w * h).transpose(0, 1)
+
+        # Prediction head.
+        # out, weights = self.att(out, out, out)
+        out, _ = self.gru(out)
+        logits = self.fc(out.squeeze())
+        return logits
+
+
+class JointModel(nn.Module):
+    def __init__(self, out_features: int, **kwargs):
+        super().__init__()
+
+        self.ext = Extraction(
+            image_shape=(1, 128, 313),
+            att_channels=[1, 3, 1],
+            att_kernels=[1, 3, 1],
+            att_paddings=[0, 1, 0],
+            att_strides=[1, 1, 1],
+            att_num_heads=1,
+            pool_att=1,
+            res_kernels=[3, 5],
+            pool=1,
+        )
+
+        self.gru = nn.GRU(
+            input_size=9120,
+            hidden_size=512,
+            num_layers=1,
+            bidirectional=True,
+            dropout=0,
         )
 
         self.fc = nn.Linear(in_features=1024, out_features=out_features)

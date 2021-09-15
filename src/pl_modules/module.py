@@ -13,7 +13,7 @@ class SoundscapeDetection(pl.LightningModule):
         super(SoundscapeDetection, self).__init__()
         self.save_hyperparameters()
 
-        self.model = model.Detection()
+        self.model = model.SoundscapeModel()
 
         self.loss = nn.BCEWithLogitsLoss()
 
@@ -88,7 +88,7 @@ class BirdcallClassification(pl.LightningModule):
         super(BirdcallClassification, self).__init__()
         self.save_hyperparameters()
 
-        self.model = model.Classification(out_features=out_features)
+        self.model = model.BirdcallModel(out_features=out_features)
 
         self.loss = nn.CrossEntropyLoss()
 
@@ -160,7 +160,7 @@ class JointClassification(pl.LightningModule):
     def __init__(self, out_features: int, **kwargs):
         super(JointClassification, self).__init__()
         self.save_hyperparameters()
-        self.model = model.Classification(out_features=out_features)
+        self.model = model.JointModel(out_features=out_features)
 
         self.loss = nn.CrossEntropyLoss()
 
