@@ -1,11 +1,12 @@
 from typing import Any
-
+import wandb
 import hydra
 import torch
 from torch import nn
-from torchmetrics import Accuracy
+import torchmetrics
 import pytorch_lightning as pl
 import src.pl_modules.model as model
+from src.pl_modules.soundscape_detection import SoundscapeModel
 
 
 class SoundscapeDetection(pl.LightningModule):
@@ -13,14 +14,26 @@ class SoundscapeDetection(pl.LightningModule):
         super(SoundscapeDetection, self).__init__()
         self.save_hyperparameters()
 
-        self.model = model.SoundscapeModel()
+        self.model = SoundscapeModel()
 
         self.loss = nn.BCEWithLogitsLoss()
 
-        metric = Accuracy()
-        self.train_accuracy = metric.clone()
-        self.val_accuracy = metric.clone()
-        self.test_accuracy = metric.clone()
+        accuracy = torchmetrics.Accuracy()
+        self.train_accuracy = accuracy.clone()
+        self.val_accuracy = accuracy.clone()
+        self.test_accuracy = accuracy.clone()
+
+        precision = torchmetrics.Precision()
+        self.train_precision = precision.clone()
+        self.val_precision = precision.clone()
+        self.test_precision = precision.clone()
+
+        recall = torchmetrics.Recall()
+        self.train_recall = recall.clone()
+        self.val_recall = recall.clone()
+        self.test_recall = recall.clone()
+
+        self.conf_mat = torchmetrics.ConfusionMatrix(num_classes=2)
 
     def forward(self, xb):
         logits = self.model(xb)
@@ -40,8 +53,16 @@ class SoundscapeDetection(pl.LightningModule):
         out_step = self.step(x=specs, y=targets)
 
         self.train_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
+        self.train_precision(out_step["preds"], targets.squeeze().to(torch.long))
+        self.train_recall(out_step["preds"], targets.squeeze().to(torch.long))
+
         self.log_dict(
-            {"train_loss": out_step["loss"], "train_acc": self.train_accuracy.compute()}
+            {
+                "train_loss": out_step["loss"],
+                "train_acc": self.train_accuracy.compute(),
+                "train_prec": self.train_precision.compute(),
+                "train_rec": self.train_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -51,8 +72,16 @@ class SoundscapeDetection(pl.LightningModule):
         out_step = self.step(x=specs, y=targets)
 
         self.val_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
+        self.val_precision(out_step["preds"], targets.squeeze().to(torch.long))
+        self.val_recall(out_step["preds"], targets.squeeze().to(torch.long))
+
         self.log_dict(
-            {"val_loss": out_step["loss"], "val_acc": self.val_accuracy.compute()}
+            {
+                "val_loss": out_step["loss"],
+                "val_acc": self.val_accuracy.compute(),
+                "val_prec": self.val_precision.compute(),
+                "val_rec": self.val_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -62,10 +91,27 @@ class SoundscapeDetection(pl.LightningModule):
         out_step = self.step(x=specs, y=targets)
 
         self.test_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
+        self.test_precision(out_step["preds"], targets.squeeze().to(torch.long))
+        self.test_recall(out_step["preds"], targets.squeeze().to(torch.long))
+
         self.log_dict(
-            {"test_loss": out_step["loss"], "test_acc": self.test_accuracy.compute()}
+            {
+                "test_acc": self.test_accuracy.compute(),
+                "test_prec": self.test_precision.compute(),
+                "test_rec": self.test_recall.compute(),
+            }
         )
-        return out_step["loss"]
+
+        p = out_step["preds"].cpu().numpy()
+        y = targets.squeeze().cpu().to(torch.long).numpy()
+
+        self.logger.experiment.log(
+            {
+                "conf_mat": wandb.plot.confusion_matrix(
+                    probs=None, y_true=y, preds=p, class_names=["nocall", "call"]
+                )
+            }
+        )
 
     def configure_optimizers(self):
         opt = hydra.utils.instantiate(
@@ -92,7 +138,7 @@ class BirdcallClassification(pl.LightningModule):
 
         self.loss = nn.CrossEntropyLoss()
 
-        metric = Accuracy()
+        metric = torchmetrics.Accuracy()
         self.train_accuracy = metric.clone()
         self.val_accuracy = metric.clone()
         self.test_accuracy = metric.clone()
@@ -164,7 +210,7 @@ class JointClassification(pl.LightningModule):
 
         self.loss = nn.CrossEntropyLoss()
 
-        metric = Accuracy()
+        metric = torchmetrics.Accuracy()
         self.train_accuracy = metric.clone()
         self.val_accuracy = metric.clone()
         self.test_accuracy = metric.clone()

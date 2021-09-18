@@ -360,7 +360,7 @@ class BirdcallModel(nn.Module):
         super().__init__()
 
         self.ext = Extraction(
-            image_shape=(1, 128, 313),  # 3751 for Birdcalls and 313 for Joint.
+            image_shape=(1, 128, 3751),
             att_channels=[1, 3, 1],
             att_kernels=[1, 3, 1],
             att_paddings=[0, 1, 0],
@@ -372,7 +372,7 @@ class BirdcallModel(nn.Module):
         )
 
         self.gru = nn.GRU(
-            input_size=384,  # 4960 or 384
+            input_size=4960,
             hidden_size=512,
             num_layers=1,
             bidirectional=True,
