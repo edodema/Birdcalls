@@ -1,5 +1,7 @@
+from typing import List
+
 import streamlit as st
-import hydra
+import torch.nn
 from omegaconf import DictConfig
 from src.pl_modules.module import (
     SoundscapeDetection,
@@ -14,11 +16,22 @@ from src.demo.utils import (
     get_csv_path,
     draw_spectrogram,
     get_prediction,
+    translate_detection,
 )
 
 
 @st.cache(allow_output_mutation=True)
-def get_model(cfg: DictConfig, mode: str):
+def get_model(cfg: DictConfig, mode: str) -> List[torch.nn.Module]:
+    """
+    Load a pretrained model.
+    Args:
+        cfg: Hydra DictConfig.
+        mode: The mode we have selected.
+
+    Returns:
+        A list of loaded models for the corresponding model.
+    """
+    # Get models paths.
     checkpoint_detection = cfg.demo.checkpoint.detection
     checkpoint_classification = cfg.demo.checkpoint.classification
     checkpoint_joint = cfg.demo.checkpoint.joint
@@ -38,6 +51,7 @@ def get_model(cfg: DictConfig, mode: str):
         return [model]
 
     elif mode == cfg.demo.mode.split:
+        # This time we have two models.
         detection = SoundscapeDetection.load_from_checkpoint(
             checkpoint_path=checkpoint_detection
         )
@@ -53,7 +67,7 @@ def get_model(cfg: DictConfig, mode: str):
             checkpoint_path=checkpoint_joint
         )
         model.eval()
-        return model
+        return [model]
 
 
 cfg = get_hydra_cfg()
@@ -93,10 +107,15 @@ fig = draw_spectrogram(spectrogram)
 st.pyplot(fig)
 
 # Display target class.
-st.write(f"Gold: {target}")
+st.write(f"Truth: {translate_detection(target, mode=mode)}")
 
 # Prediction.
-model = get_model(cfg=cfg, mode=mode)
-_, pred = model(spectrogram)
-pred = get_prediction(pred, mode=mode)
-st.write(f"Prediction: {pred}")
+models = get_model(cfg=cfg, mode=mode)
+
+if mode == cfg.demo.mode.split:
+    st.write("TODO")
+else:
+    model = models[0]
+    _, pred = model(spectrogram)
+    pred = get_prediction(pred, mode=mode)
+    st.write(f"Prediction: {pred}")

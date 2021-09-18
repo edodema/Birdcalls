@@ -1,3 +1,19 @@
+"""
+- Environment setup:
+    - get_hydra_cfg
+
+- UI elements:
+    - draw_spectrogram
+
+- Helper functions:
+    - get_csv_path
+    - get_sample
+    - get_tensor
+    - translate_detection
+    - get_predictions
+
+"""
+
 from typing import Union, Tuple
 import pandas as pd
 import numpy as np
@@ -8,7 +24,7 @@ import librosa
 import matplotlib.pyplot as plt
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig
-from src.common.utils import PROJECT_ROOT, TRAIN_SOUNDSCAPES, IDX2BIRD, load_vocab
+from src.common.utils import PROJECT_ROOT, SOUNDSCAPES_DIR, IDX2BIRD, load_vocab
 from src.pl_data.dataset import SoundscapeDataset, BirdcallDataset, JointDataset
 
 idx2bird = load_vocab(IDX2BIRD)
@@ -39,11 +55,28 @@ MODES = {
 }
 
 
+def draw_spectrogram(spectrogram):
+    """
+    Plot a spectrogram tensor in the demo.
+    Args:
+        spectrogram: The spectrogram tensor.
+
+    Returns:
+    """
+    spec = np.transpose(librosa.power_to_db(spectrogram[0].numpy()), axes=(1, 2, 0))
+    fig, axs = plt.subplots(1, 1)
+    axs.set_title("Spectrogram (db)")
+    axs.set_ylabel("freq")
+    axs.set_xlabel("frame")
+    axs.imshow(spec, origin="lower", aspect="auto")
+    return fig
+
+
 def get_csv_path(mode: str):
     """
     Just a wrapper to get the correct CSV path.
     Args:
-        mode: The mode we are using.
+        mode: The selected mode.
 
     Returns:
         The corresponding filepath.
@@ -76,16 +109,6 @@ def get_sample(csv_path: Union[str, Path]) -> pd.DataFrame:
     return sample
 
 
-def draw_spectrogram(spectrogram):
-    spec = np.transpose(librosa.power_to_db(spectrogram[0].numpy()), axes=(1, 2, 0))
-    fig, axs = plt.subplots(1, 1)
-    axs.set_title("Spectrogram (db)")
-    axs.set_ylabel("freq")
-    axs.set_xlabel("frame")
-    im = axs.imshow(spec, origin="lower", aspect="auto")
-    return fig
-
-
 def get_tensor(
     sample: pd.DataFrame, mode: str
 ) -> Tuple[Union[str, Path], int, torch.Tensor, torch.Tensor]:
@@ -110,7 +133,7 @@ def get_tensor(
         )
 
         # Get audio path.
-        path = list(TRAIN_SOUNDSCAPES.glob(audio_id[0] + "*"))[0]
+        path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
 
         return path, seconds[0] - 5, spectrogram, target.to(int).item()
 
@@ -150,14 +173,38 @@ def get_tensor(
         )
 
         # Get audio path.
-        path = list(TRAIN_SOUNDSCAPES.glob(audio_id[0] + "*"))[0]
+        path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
 
         return path, seconds[0] - 5, spectrogram, idx2bird[str(target[0].item())]
 
 
+def translate_detection(x, mode: str):
+    """
+    Just get the detection prediction in a human readable way.
+    Args:
+        x: What we want to translate.
+        mode: The selected mode.
+
+    Returns:
+        The human readable prediction.
+    """
+    if mode == MODES["soundscapes"]:
+        x = "No" if x == 0 else "Yes"
+    return x
+
+
 def get_prediction(pred, mode: str):
+    """
+    Outputs a prediction in a way consistent to the selected mode.
+    Args:
+        pred: The output prediction of a model.
+        mode: The selected mode.
+
+    Returns:
+        The output value, it depends on the mode.
+    """
     if mode == MODES["soundscapes"] or mode == MODES["split"]:
-        return None
+        return translate_detection(pred, mode=mode)
 
     elif mode == MODES["birdcalls"]:
         return idx2bird[str(pred.item())]
