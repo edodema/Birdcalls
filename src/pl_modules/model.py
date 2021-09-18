@@ -212,7 +212,7 @@ class CNNRes(nn.Module):
         out = self.conv1(res)
         res = self.conv1(out) + res
         out = self.conv1(res)
-        res = self.conv1(out)
+        res = self.conv1(out) + res
         return res
 
 
