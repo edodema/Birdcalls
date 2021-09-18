@@ -6,15 +6,15 @@ mode:
   joint: "Joint"
 
 csv:
-  soundscapes: ${oc.env:SOUNDSCAPES_CSV}
-  birdcalls: ${oc.env:BIRDCALLS_CSV}
-  joint: ${oc.env:SOUNDSCAPES_CSV}
+  soundscapes: ${oc.env:TEST_SOUNDSCAPES_CSV}
+  birdcalls: ${oc.env:TEST_BIRDCALLS_CSV}
+  joint: ${oc.env:TEST_SOUNDSCAPES_CSV}
 
 audio_dir:
-  birdcalls: ${oc.env:TRAIN_BIRDCALLS}
-  soundscapes: ${oc.env:TRAIN_SOUNDSCAPES}
+  birdcalls: ${oc.env:BIRDCALLS_DIR}
+  soundscapes: ${oc.env:SOUNDSCAPES_DIR}
 
 checkpoint:
+  detection: ${oc.env:MODEL_SOUNDSCAPE_DETECTION}
   classification:
-  detection:
   joint: ${oc.env:MODEL_JOINT}

@@ -1,5 +1,4 @@
 vocabs:
-  birdcalls_path: ${oc.env:TRAIN_BIRDCALLS}
   idx2bird_path: ${oc.env:IDX2BIRD}
   bird2idx_path: ${oc.env:BIRD2IDX}
 
@@ -33,25 +32,34 @@ soundscapes_datamodule:
     train:
       _target_: src.pl_data.dataset.SoundscapeDataset
       name: TRAIN_SOUNDSCAPES
-      path: ${oc.env:TRAIN_SOUNDSCAPES}
-      csv_path: ${oc.env:SOUNDSCAPES_TRAIN_CSV}
+      csv_path: ${oc.env:TRAIN_SOUNDSCAPES_CSV}
       online: False
       debug:
       load: True
-      spectrograms_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:TRAIN_SOUNDSCAPES_DEBUG_TARGETS}
+      spectrograms_path: ${oc.env:TRAIN_SOUNDSCAPES_SPECTROGRAMS}
+      targets_path: ${oc.env:TRAIN_SOUNDSCAPES_TARGETS}
       train: True
 
     val:
       _target_: src.pl_data.dataset.SoundscapeDataset
       name: VAL_SOUNDSCAPES
-      path:
-      csv_path: ${oc.env:SOUNDSCAPES_VAL_CSV}
+      csv_path: ${oc.env:VAL_SOUNDSCAPES_CSV}
       online: False
       debug:
       load: True
-      spectrograms_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:VAL_SOUNDSCAPES_DEBUG_TARGETS}
+      spectrograms_path: ${oc.env:VAL_SOUNDSCAPES_SPECTROGRAMS}
+      targets_path: ${oc.env:VAL_SOUNDSCAPES_TARGETS}
+      train: False
+
+    test:
+      _target_: src.pl_data.dataset.SoundscapeDataset
+      name: TEST_SOUNDSCAPES
+      csv_path: ${oc.env:TEST_SOUNDSCAPES_CSV}
+      online: False
+      debug:
+      load: True
+      spectrograms_path: ${oc.env:TEST_SOUNDSCAPES_SPECTROGRAMS}
+      targets_path: ${oc.env:TEST_SOUNDSCAPES_TARGETS}
       train: False
 
 birdcalls_datamodule:
@@ -84,27 +92,37 @@ birdcalls_datamodule:
     train:
       _target_: src.pl_data.dataset.BirdcallDataset
       name: TRAIN_BIRDCALLS
-      path: ${oc.env:TRAIN_BIRDCALLS}
-      csv_path: ${oc.env:BIRDCALLS_CSV}
+      csv_path: ${oc.env:TRAIN_BIRDCALLS_CSV}
       standard_len: 1
-      online: True
+      online: False
       debug: 800
-      load: False
-      spectrograms_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:TRAIN_BIRDCALLS_DEBUG_TARGETS}
+      load: True
+      spectrograms_path: ${oc.env:TRAIN_BIRDCALLS_SPECTROGRAMS}
+      targets_path: ${oc.env:TRAIN_BIRDCALLS_TARGETS}
       train: True
 
     val:
       _target_: src.pl_data.dataset.BirdcallDataset
       name: VAL_BIRDCALLS
-      path:
-      csv_path: ${oc.env:BIRDCALLS_VAL_CSV}
+      csv_path: ${oc.env:VAL_BIRDCALLS_CSV}
       standard_len: 1
       online: False
       debug: 200
       load: True
-      spectrograms_path: ${oc.env:VAL_BIRDCALLS_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:VAL_BIRDCALLS_DEBUG_TARGETS}
+      spectrograms_path: ${oc.env:VAL_BIRDCALLS_SPECTROGRAMS}
+      targets_path: ${oc.env:VAL_BIRDCALLS_TARGETS}
+      train: False
+
+    test:
+      _target_: src.pl_data.dataset.BirdcallDataset
+      name: TEST_BIRDCALLS
+      csv_path: ${oc.env:TEST_BIRDCALLS_CSV}
+      standard_len: 1
+      online: False
+      debug: 200
+      load: False
+      spectrograms_path: ${oc.env:TEST_BIRDCALLS_SPECTROGRAMS}
+      targets_path: ${oc.env:TEST_BIRDCALLS_TARGETS}
       train: False
 
 joint_datamodule:
@@ -129,23 +147,32 @@ joint_datamodule:
     train:
       _target_: src.pl_data.dataset.JointDataset
       name: TRAIN_JOINT
-      path: ${oc.env:TRAIN_SOUNDSCAPES}
-      csv_path: ${oc.env:JOINT_TRAIN_CSV}
+      csv_path: ${oc.env:TRAIN_JOINT_CSV}
       online: False
-      debug: 32823 # We treat split as 70-30
-      load: False
-      spectrograms_path: ${oc.env:TRAIN_JOINT_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:TRAIN_JOINT_DEBUG_TARGETS}
+      debug: 32823
+      load: True
+      spectrograms_path: ${oc.env:TRAIN_JOINT_SPECTROGRAMS}
+      targets_path: ${oc.env:TRAIN_JOINT_TARGETS}
       train: True
 
     val:
       _target_: src.pl_data.dataset.JointDataset
       name: VAL_JOINT
-      path:
-      csv_path: ${oc.env:JOINT_VAL_CSV}
+      csv_path: ${oc.env:VAL_JOINT_CSV}
       online: False
       debug:
-      load: False
-      spectrograms_path: ${oc.env:VAL_JOINT_DEBUG_SPECTROGRAMS}
-      targets_path: ${oc.env:VAL_JOINT_DEBUG_TARGETS}
+      load: True
+      spectrograms_path: ${oc.env:VAL_JOINT_SPECTROGRAMS}
+      targets_path: ${oc.env:VAL_JOINT_TARGETS}
+      train: False
+
+    test:
+      _target_: src.pl_data.dataset.JointDataset
+      name: TEST_JOINT
+      csv_path: ${oc.env:TEST_JOINT_CSV}
+      online: False
+      debug:
+      load: True
+      spectrograms_path: ${oc.env:TEST_JOINT_SPECTROGRAMS}
+      targets_path: ${oc.env:TEST_JOINT_TARGETS}
       train: False

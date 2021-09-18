@@ -23,7 +23,7 @@ eBird seems to be better.
 - [ ] Write a function that precomputes tensors, this way training will be easier.
 - [ ]  A radix major implementation for ResNet (see paper) was too problematic due to computation
 - [ ] See Resnet paper 3.2 plain network recommendations.
-- [ ] During validation soundcalls datasets have been halved, birdcalls probablt thirded.
+- [ ] During validation soundscape datasets have been halved, birdcalls probablt thirded.
 - [ ] Occam's razor.
 - [ ] In env.template write the path as an explanation of the variable
 - [ ] When there are imbalances accuracy is useless.
@@ -31,3 +31,4 @@ eBird seems to be better.
 - [ ] In the future works add what you could have done with more resources and thresholding.
 - [ ] Export the plots in W&B and combine them.
 - [ ] Specify seed, our goal is not to have a good on-the-wild ai.
+- [ ] Soundscapes and Joint: 80-10-10, Birdcalls: 70-15-15
