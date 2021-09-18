@@ -136,8 +136,8 @@ def soundscapes_run(cfg: DictConfig):
     hydra.utils.log.info(f"Starting training!")
     trainer.fit(model=model, datamodule=datamodule)
 
-    # # hydra.utils.log.info(f"Starting testing!")
-    # # trainer.test(datamodule=datamodule)
+    # hydra.utils.log.info(f"Starting testing!")
+    # trainer.test(datamodule=datamodule)
 
     # Logger closing to release resources/avoid multi-run conflicts
     if wandb_logger is not None:
@@ -328,25 +328,36 @@ def joint_run(cfg: DictConfig):
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
-    # Train soundscapes detection.
-    # soundscapes_run(cfg)
+    # Train soundscapes.csv detection.
+    soundscapes_run(cfg)
 
     # Train birdcalls classification.
-    birdcalls_run(cfg)
+    # birdcalls_run(cfg)
 
     # Train joint.
     # joint_run(cfg)
 
-    # from src.common.utils import random_oversampler
+    # TODO
+    # from src.common.utils import split_dataset
     #
-    # csv = Path("/home/edo/Documents/Code/Birdcalls/data/train_soundscape_labels.csv")
+    # csv = Path("/home/edo/Documents/Code/Birdcalls/out/birdcalls_balanced.csv")
     # df = pd.read_csv(csv)
+    # train_df, eval_df = split_dataset(csv=csv, autosave=False, p=0.7)
+    # val_df, test_df = split_dataset(csv=eval_df, autosave=False, p=0.5)
     #
-    # dg = random_oversampler(df=df, target=("birds", None))
+    # train_df.to_csv(
+    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/birdcalls.csv",
+    #     index=False,
+    # )
     #
-    # dg.to_csv(
-    #     "/home/edo/Documents/Code/Birdcalls/out/soundscapes_birds_balanced.csv",
-    #     index=None,
+    # val_df.to_csv(
+    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/birdcalls.csv",
+    #     index=False,
+    # )
+    #
+    # test_df.to_csv(
+    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/test/birdcalls.csv",
+    #     index=False,
     # )
 
     # # For our purposes we only care about the primary label.

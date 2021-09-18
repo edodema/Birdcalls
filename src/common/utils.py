@@ -21,6 +21,7 @@ Utilities that come handy.
     - save_vocab
     - load_vocab
     - birdcall_vocabs
+    - get_most_common_class
     - random_oversampler
     - split_dataset
 
@@ -51,6 +52,7 @@ import librosa
 import json
 import numpy as np
 from collections import Counter
+
 
 # https://github.com/lucmos/nn-template/blob/969c36f069723d2a99ad31eb4b883160a572f651/src/common/utils.py#L13
 def get_env(env_name: str, default: Optional[str] = None) -> str:
@@ -105,15 +107,15 @@ assert (
 os.chdir(PROJECT_ROOT)
 
 # Get global variables.
-TRAIN_BIRDCALLS: Path = Path(get_env("TRAIN_BIRDCALLS"))
+BIRDCALLS_DIR: Path = Path(get_env("BIRDCALLS_DIR"))
 assert (
-    TRAIN_BIRDCALLS.exists()
-), "You must configure the TRAIN_BIRDCALLS environment variable in a .env file!"
+    BIRDCALLS_DIR.exists()
+), "You must configure the BIRDCALLS_DIR environment variable in a .env file!"
 
-TRAIN_SOUNDSCAPES: Path = Path(get_env("TRAIN_SOUNDSCAPES"))
+SOUNDSCAPES_DIR: Path = Path(get_env("SOUNDSCAPES_DIR"))
 assert (
-    TRAIN_SOUNDSCAPES.exists()
-), "You must configure the TRAIN_SOUNDSCAPES environment variable in a .env file!"
+    SOUNDSCAPES_DIR.exists()
+), "You must configure the SOUNDSCAPES_DIR environment variable in a .env file!"
 
 # Get global variables for vocabularies.
 BIRD2IDX: Path = Path(get_env("BIRD2IDX"))
@@ -407,6 +409,46 @@ def birdcall_vocabs(
     save_vocab(bird2idx, bird2idx_path)
 
 
+def get_most_common_class(df: pd.DataFrame, col: str):
+    """
+    Get some insights on the most common class of a column in a dataframe.
+    Args:
+        df: Dataframe object.
+        col: The column we are interested in.
+
+    Returns:
+        - class: Most frequent class.
+        - len: Number of samples belonging to the most frequent class.
+        - function: A vectorized function to filter primary labels.
+        - counter: Counter object.
+    """
+    col = df[col].values
+
+    # If there are elements split by spaces (as in birds) we only keep the primary label.
+    if isinstance(col[0], str):
+
+        def f(x: str):
+            return x.split()[0]
+
+    else:
+
+        def f(_):
+            pass
+
+    fv = np.vectorize(f)
+    col = fv(col)
+
+    # Take the most frequent class.
+    count = Counter(col)
+    most_common_class, most_common_n = count.most_common(1)[0]
+    return {
+        "class": most_common_class,
+        "len": most_common_n,
+        "function": fv,
+        "counter": count,
+    }
+
+
 def random_oversampler(
     df: pd.DataFrame,
     target: Tuple[str, Union[int, str, None]],
@@ -427,8 +469,8 @@ def random_oversampler(
 
     # - If target value is None n_samples and mode must be too.
     # - If target value is specified n_samples and mode must be too.
-    phi = bool(target[1]) or (not n_samples and not mode)
-    psi = not target[1] or (bool(n_samples) and bool(mode))
+    phi = bool(target[1]) or not mode
+    psi = not target[1] or bool(mode)
 
     assert (
         phi and psi
@@ -437,17 +479,21 @@ def random_oversampler(
     if target[1]:
         # We specified a number to oversample to.
 
-        target_class, target_value = target
+        target_col, target_value = target
 
         # Sample random points from the target distribution and append them to df.
         if mode == "==":
-            distribution = df[df[target_class] == target_value]
+            distribution = df[df[target_col] == target_value]
         elif mode == "!=":
-            distribution = df[df[target_class] != target_value]
+            distribution = df[df[target_col] != target_value]
         else:
             raise Exception("Select a valid mode.")
 
         n_distr = len(distribution)
+
+        # If n_samples is not defined we consider the most frequent class.
+        if not n_samples:
+            n_samples = get_most_common_class(df=df, col=target_col)["len"]
 
         assert (
             n_samples > n_distr
@@ -459,36 +505,23 @@ def random_oversampler(
         df = df.append(other=new_samples, ignore_index=True)
     else:
         # We balance all classes.
-        target_class = target[0]
-        col = df[target_class].values
+        target_col = target[0]
 
-        # If there are elements split by spaces (as in birds) we only keep the primary label.
-        if isinstance(col[0], str):
-
-            def f(x: str):
-                return x.split()[0]
-
-        else:
-
-            def f(_):
-                pass
-
-        fv = np.vectorize(f)
-        col = fv(col)
-
-        # Take the most frequent class.
-        count = Counter(col)
-        most_common_class, most_common_n = count.most_common(1)[0]
+        most_common = get_most_common_class(df=df, col=target_col)
+        count = most_common["counter"]
+        most_common_n = most_common["len"]
+        fv = most_common["function"]
 
         # Oversampling for each class.
         for k, v in count.items():
+            # Data we want to sample from.
+            distribution = df[fv(df[target_col]) == k]
+
             # Repeat samples.
             to_n = most_common_n - v
             if to_n == 0:
                 continue
 
-            # Data we want to sample from.
-            distribution = df[fv(df[target_class]) == k]
             samples = np.random.randint(0, v, to_n, dtype=int)
             new_samples = distribution.iloc[samples]
             df = df.append(other=new_samples, ignore_index=True)
@@ -497,7 +530,7 @@ def random_oversampler(
 
 
 def split_dataset(
-    csv_path: Union[str, Path],
+    csv: Union[str, Path, pd.DataFrame],
     save_path_train: Union[str, Path, None] = None,
     save_path_eval: Union[str, Path, None] = None,
     p: float = 0.8,
@@ -516,7 +549,11 @@ def split_dataset(
         0 <= p and p <= 1
     ), "The probability of a sample being in the train set must be between 0 and 1!"
 
-    df = pd.read_csv(csv_path)
+    if isinstance(csv, str) or isinstance(csv, Path):
+        df = pd.read_csv(csv)
+    else:
+        df = csv
+
     df = df.sample(frac=1)
 
     idx = int(len(df) * p)

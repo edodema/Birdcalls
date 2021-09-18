@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Dict, Union, Optional
 import numpy as np
@@ -8,8 +7,8 @@ from torch.utils.data import Dataset
 import torchaudio
 import pandas as pd
 from src.common.utils import (
-    TRAIN_BIRDCALLS,
-    TRAIN_SOUNDSCAPES,
+    BIRDCALLS_DIR,
+    SOUNDSCAPES_DIR,
     BIRD2IDX,
     get_spectrogram,
     load_vocab,
@@ -89,7 +88,7 @@ class SoundscapeDataset(Dataset):
             golds.append(b)
 
             # Get the soundscape file, * is a wildcard and we only use the id.
-            file_path = list(TRAIN_SOUNDSCAPES.glob(id + "*"))[0]
+            file_path = list(SOUNDSCAPES_DIR.glob(id + "*"))[0]
             spec = get_spectrogram(file_path, time_window=(s - 5, s))
             spectrograms.append(spec)
 
@@ -202,7 +201,7 @@ class SoundscapeDataset(Dataset):
             golds.append(birds)
 
             # We consider 5 seconds audio clips.
-            file_path = list(TRAIN_SOUNDSCAPES.glob(audio_id + "*"))[0]
+            file_path = list(SOUNDSCAPES_DIR.glob(audio_id + "*"))[0]
             spec = get_spectrogram(file_path, time_window=(seconds - 5, seconds))
             spectrograms.append(spec)
 
@@ -229,10 +228,10 @@ class BirdcallDataset(Dataset):
     def __init__(
         self,
         csv_path: Union[str, Path, None],
-        standard_len: Optional[int],
         online: bool,
         debug: int,
         load: bool,
+        standard_len: Optional[int] = None,
         **kwargs
     ):
         """
@@ -244,13 +243,18 @@ class BirdcallDataset(Dataset):
         :param load: If true we do not compute anything and will load values from a file.
         :param kwargs:
         """
+        # If there is no standard len then we are loading.
+        assert bool(standard_len) or load
+
         self.online = online
         self.len: int
 
         self.spectrograms: torch.Tensor
         self.targets: torch.Tensor
+
         # Set the standard length, this is useful only for the UI.
-        self.standard_len = standard_len * 60
+        if standard_len:
+            self.standard_len = standard_len * 60
 
         # We do something only if load is False.
         if not load:
@@ -270,7 +274,6 @@ class BirdcallDataset(Dataset):
         :return: The columns of our CSV as numpy arrays.
         """
         primary_label = df["primary_label"].values
-        print(primary_label)
         scientific_name = df["scientific_name"].values
         common_name = df["common_name"].values
         filename = df["filename"].values
@@ -323,7 +326,7 @@ class BirdcallDataset(Dataset):
 
         for primary_label, filename in zip(primary_labels, filenames):
             # Get the path for each audio file.
-            audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
+            audio_file = Path(str(BIRDCALLS_DIR / primary_label / filename))
 
             # Directly load the audio file since we need to do some light preprocessing on the waveform.
             raw_waveform, sample_rate = torchaudio.load(audio_file)
@@ -392,7 +395,7 @@ class BirdcallDataset(Dataset):
             filename = obj["filename"]
 
             # Compute the spectrogram.
-            audio_file = Path(str(TRAIN_BIRDCALLS / primary_label / filename))
+            audio_file = Path(str(BIRDCALLS_DIR / primary_label / filename))
 
             # Directly load the audio file since we need to do some light preprocessing on the waveform.
             raw_waveform, sample_rate = torchaudio.load(audio_file)
@@ -570,7 +573,7 @@ class JointDataset(Dataset):
             golds.append(b)
 
             # Get the soundscape file, * is a wildcard and we only use the id.
-            file_path = list(TRAIN_SOUNDSCAPES.glob(id + "*"))[0]
+            file_path = list(SOUNDSCAPES_DIR.glob(id + "*"))[0]
             spec = get_spectrogram(file_path, time_window=(s - 5, s))
             spectrograms.append(spec)
 
@@ -682,7 +685,7 @@ class JointDataset(Dataset):
             golds.append(birds)
 
             # We consider 5 seconds audio clips.
-            file_path = list(TRAIN_SOUNDSCAPES.glob(audio_id + "*"))[0]
+            file_path = list(SOUNDSCAPES_DIR.glob(audio_id + "*"))[0]
             spec = get_spectrogram(file_path, time_window=(seconds - 5, seconds))
             spectrograms.append(spec)
 
@@ -703,49 +706,83 @@ class JointDataset(Dataset):
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
-    birdcalls = hydra.utils.instantiate(
-        cfg.data.birdcalls_datamodule.datasets.train, _recursive_=False
-    )
+    # print("TRAIN")
     #
-    # print(joint.spectrograms.shape)
-    # print(joint.targets.shape)
+    # spectrograms_path = cfg.data.joint_datamodule.datasets.train.spectrograms_path
+    # targets_path = cfg.data.joint_datamodule.datasets.train.targets_path
     #
-    # joint.save(
-    #     spectrograms_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/train/joint/spectrograms_balanced.pt",
-    #     targets_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/train/joint/targets_balanced.pt",
+    # print(spectrograms_path)
+    # print(targets_path)
+    #
+    # print("save")
+    # ds = hydra.utils.instantiate(
+    #     cfg.data.joint_datamodule.datasets.train, _recursive_=False
     # )
     #
-    # print("VAL")
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
     #
-    # joint = hydra.utils.instantiate(
+    # ds.save(spectrograms_path=spectrograms_path, targets_path=targets_path)
+    #
+    # print("load")
+    # ds = JointDataset.load(
+    #     spectrograms_path=spectrograms_path, targets_path=targets_path
+    # )
+    #
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
+    #
+    # print("\nVAL")
+    #
+    # spectrograms_path = cfg.data.joint_datamodule.datasets.val.spectrograms_path
+    # targets_path = cfg.data.joint_datamodule.datasets.val.targets_path
+    #
+    # print(spectrograms_path)
+    # print(targets_path)
+    #
+    # print("save")
+    # ds = hydra.utils.instantiate(
     #     cfg.data.joint_datamodule.datasets.val, _recursive_=False
     # )
     #
-    # print(joint.spectrograms.shape)
-    # print(joint.targets.shape)
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
     #
-    # joint.save(
-    #     spectrograms_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/joint/spectrograms_balanced.pt",
-    #     targets_path="/home/edo/Documents/Code/Birdcalls/out/debug_datasets/val/joint/targets_balanced.pt",
+    # ds.save(spectrograms_path=spectrograms_path, targets_path=targets_path)
+    #
+    # print("load")
+    # ds = JointDataset.load(
+    #     spectrograms_path=spectrograms_path, targets_path=targets_path
     # )
+    #
+    # print(ds.spectrograms.shape)
+    # print(ds.targets.shape)
 
-    # spectrograms = cfg.data.joint_datamodule.datasets.train.spectrograms_path
-    # targets = cfg.data.joint_datamodule.datasets.train.targets_path
-    #
-    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-    #
-    # print(ds.spectrograms.shape)
-    # print(ds.targets.shape)
-    #
-    # print("LOAD VAL")
-    #
-    # spectrograms = cfg.data.joint_datamodule.datasets.val.spectrograms_path
-    # targets = cfg.data.joint_datamodule.datasets.val.targets_path
-    #
-    # ds = JointDataset.load(spectrograms_path=spectrograms, targets_path=targets)
-    #
-    # print(ds.spectrograms.shape)
-    # print(ds.targets.shape)
+    print("\nTEST")
+
+    spectrograms_path = cfg.data.birdcalls_datamodule.datasets.test.spectrograms_path
+    targets_path = cfg.data.birdcalls_datamodule.datasets.test.targets_path
+
+    print(spectrograms_path)
+    print(targets_path)
+
+    print("save")
+    ds = hydra.utils.instantiate(
+        cfg.data.birdcalls_datamodule.datasets.test, _recursive_=False
+    )
+
+    print(ds.spectrograms.shape)
+    print(ds.targets.shape)
+
+    ds.save(spectrograms_path=spectrograms_path, targets_path=targets_path)
+
+    print("load")
+    ds = BirdcallDataset.load(
+        spectrograms_path=spectrograms_path, targets_path=targets_path
+    )
+
+    print(ds.spectrograms.shape)
+    print(ds.targets.shape)
 
 
 if __name__ == "__main__":
