@@ -422,10 +422,10 @@ out/*
 #out/split_datasets/val/*
 #
 #out/test/birdcalls/*
-#out/test/soundscapes/*
+#out/test/soundscapes.csv/*
 #
 #out/val/birdcalls/*
-#out/val/soundscapes/*
+#out/val/soundscapes.csv/*
 
 out/vocabs/*
 
