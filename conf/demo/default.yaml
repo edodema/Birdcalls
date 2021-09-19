@@ -1,3 +1,5 @@
+bird_names: ${oc.env:BIRD_NAMES}
+
 mode:
   empty: "-"
   soundscapes: "Soundscapes"

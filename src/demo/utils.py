@@ -4,16 +4,14 @@
 
 - UI elements:
     - draw_spectrogram
+    - translate_detection
 
-- Helper functions:
+- Data manipulation:
     - get_csv_path
     - get_sample
     - get_tensor
-    - translate_detection
     - get_predictions
-
 """
-
 from typing import Union, Tuple
 import pandas as pd
 import numpy as np
@@ -24,7 +22,12 @@ import librosa
 import matplotlib.pyplot as plt
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig
-from src.common.utils import PROJECT_ROOT, SOUNDSCAPES_DIR, IDX2BIRD, load_vocab
+from src.common.utils import (
+    PROJECT_ROOT,
+    SOUNDSCAPES_DIR,
+    IDX2BIRD,
+    load_vocab,
+)
 from src.pl_data.dataset import SoundscapeDataset, BirdcallDataset, JointDataset
 
 idx2bird = load_vocab(IDX2BIRD)
@@ -70,6 +73,29 @@ def draw_spectrogram(spectrogram):
     axs.set_xlabel("frame")
     axs.imshow(spec, origin="lower", aspect="auto")
     return fig
+
+
+def translate_detection(x, mode: str):
+    """
+    Just get the detection prediction in a human readable way.
+    Args:
+        x: What we want to translate.
+        mode: The selected mode.
+
+    Returns:
+        The human readable prediction.
+    """
+    if mode == MODES["soundscapes"]:
+        x = "No" if x == 0 else "Yes"
+    elif mode == MODES["birdcalls"]:
+        pass
+    elif mode == MODES["joint"]:
+        if x == "nocall":
+            x = "No"
+        else:
+            scientific, common = load_vocab(path=cfg.demo.bird_names)[x]
+            x = common + " (" + scientific + ")"
+    return x
 
 
 def get_csv_path(mode: str):
@@ -176,21 +202,6 @@ def get_tensor(
         path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
 
         return path, seconds[0] - 5, spectrogram, idx2bird[str(target[0].item())]
-
-
-def translate_detection(x, mode: str):
-    """
-    Just get the detection prediction in a human readable way.
-    Args:
-        x: What we want to translate.
-        mode: The selected mode.
-
-    Returns:
-        The human readable prediction.
-    """
-    if mode == MODES["soundscapes"]:
-        x = "No" if x == 0 else "Yes"
-    return x
 
 
 def get_prediction(pred, mode: str):

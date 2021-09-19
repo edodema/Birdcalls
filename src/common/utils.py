@@ -20,6 +20,7 @@ Utilities that come handy.
 - Preprocessing:
     - save_vocab
     - load_vocab
+    - get_birds_names
     - birdcall_vocabs
     - get_most_common_class
     - random_oversampler
@@ -38,7 +39,7 @@ Utilities that come handy.
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Union, Callable, Tuple
+from typing import Optional, Dict, Union, Callable, Tuple, List
 import dotenv
 import hydra
 import pandas as pd
@@ -383,6 +384,29 @@ def load_vocab(path: Union[str, Path]) -> Dict:
     vocab = json.load(f)
     f.close()
     return vocab
+
+
+def get_birds_names(csv_path: Union[str, Path]) -> Dict[str, List[str]]:
+    """
+    Get a dictionary associating the id of a bird with its scientific and common name.
+    Args:
+        csv_path: Path of the CSV file.
+
+    Returns:
+        A dictionary mapping a species' id with its scientific and common name.
+    """
+    df = pd.read_csv(csv_path)
+    labels = df["primary_label"].values
+    scientific = df["scientific_name"].values
+    common = df["common_name"].values
+
+    out = {}
+    for label, s_name, c_name in zip(labels, scientific, common):
+        if label in out:
+            continue
+        out[label] = [s_name, c_name]
+
+    return out
 
 
 def birdcall_vocabs(
