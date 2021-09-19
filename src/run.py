@@ -329,13 +329,13 @@ def joint_run(cfg: DictConfig):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="default")
 def main(cfg: DictConfig):
     # Train soundscapes.csv detection.
-    soundscapes_run(cfg)
+    # soundscapes_run(cfg)
 
     # Train birdcalls classification.
     # birdcalls_run(cfg)
 
     # Train joint.
-    # joint_run(cfg)
+    joint_run(cfg)
 
     # TODO
     # from src.common.utils import split_dataset

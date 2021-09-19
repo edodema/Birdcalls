@@ -5,8 +5,9 @@ import torch
 from torch import nn
 import torchmetrics
 import pytorch_lightning as pl
-import src.pl_modules.model as model
-from src.pl_modules.soundscape_detection import SoundscapeModel
+from src.pl_modules.detection import SoundscapeModel
+from src.pl_modules.classification import BirdcallModel
+from src.pl_modules.joint import JointModel
 
 
 class SoundscapeDetection(pl.LightningModule):
@@ -38,7 +39,7 @@ class SoundscapeDetection(pl.LightningModule):
     def forward(self, xb):
         logits = self.model(xb)
         # The loss function does implement the sigmoid by itself.
-        preds = torch.sigmoid(logits).squeeze().ge(0.5).to(torch.long)
+        preds = torch.sigmoid(logits).squeeze(1).ge(0.5).to(torch.long)
         return logits, preds
 
     def step(self, x: torch.Tensor, y: torch.Tensor):
@@ -52,9 +53,12 @@ class SoundscapeDetection(pl.LightningModule):
 
         out_step = self.step(x=specs, y=targets)
 
-        self.train_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
-        self.train_precision(out_step["preds"], targets.squeeze().to(torch.long))
-        self.train_recall(out_step["preds"], targets.squeeze().to(torch.long))
+        x = out_step["preds"]
+        y = targets.squeeze(1).to(torch.long)
+
+        self.train_accuracy(x, y)
+        self.train_precision(x, y)
+        self.train_recall(x, y)
 
         self.log_dict(
             {
@@ -71,9 +75,12 @@ class SoundscapeDetection(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.val_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
-        self.val_precision(out_step["preds"], targets.squeeze().to(torch.long))
-        self.val_recall(out_step["preds"], targets.squeeze().to(torch.long))
+        x = out_step["preds"]
+        y = targets.squeeze(1).to(torch.long)
+
+        self.val_accuracy(x, y)
+        self.val_precision(x, y)
+        self.val_recall(x, y)
 
         self.log_dict(
             {
@@ -90,9 +97,12 @@ class SoundscapeDetection(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.test_accuracy(out_step["preds"], targets.squeeze().to(torch.long))
-        self.test_precision(out_step["preds"], targets.squeeze().to(torch.long))
-        self.test_recall(out_step["preds"], targets.squeeze().to(torch.long))
+        x = out_step["preds"]
+        y = targets.squeeze(1).to(torch.long)
+
+        self.test_accuracy(x, y)
+        self.test_precision(x, y)
+        self.test_recall(x, y)
 
         self.log_dict(
             {
@@ -102,13 +112,13 @@ class SoundscapeDetection(pl.LightningModule):
             }
         )
 
-        p = out_step["preds"].cpu().numpy()
-        y = targets.squeeze().cpu().to(torch.long).numpy()
-
         self.logger.experiment.log(
             {
                 "conf_mat": wandb.plot.confusion_matrix(
-                    probs=None, y_true=y, preds=p, class_names=["nocall", "call"]
+                    probs=None,
+                    preds=x.cpu(),
+                    y_true=y.cpu(),
+                    class_names=["nocall", "call"],
                 )
             }
         )
@@ -134,14 +144,24 @@ class BirdcallClassification(pl.LightningModule):
         super(BirdcallClassification, self).__init__()
         self.save_hyperparameters()
 
-        self.model = model.BirdcallModel(out_features=out_features)
+        self.model = BirdcallModel(out_features=out_features)
 
         self.loss = nn.CrossEntropyLoss()
 
-        metric = torchmetrics.Accuracy()
-        self.train_accuracy = metric.clone()
-        self.val_accuracy = metric.clone()
-        self.test_accuracy = metric.clone()
+        accuracy = torchmetrics.Accuracy()
+        self.train_accuracy = accuracy.clone()
+        self.val_accuracy = accuracy.clone()
+        self.test_accuracy = accuracy.clone()
+
+        precision = torchmetrics.Precision()
+        self.train_precision = precision.clone()
+        self.val_precision = precision.clone()
+        self.test_precision = precision.clone()
+
+        recall = torchmetrics.Recall()
+        self.train_recall = recall.clone()
+        self.val_recall = recall.clone()
+        self.test_recall = recall.clone()
 
     def forward(self, xb):
         logits = self.model(xb)
@@ -158,9 +178,20 @@ class BirdcallClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.train_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.train_accuracy(x, y)
+        self.train_precision(x, y)
+        self.train_recall(x, y)
+
         self.log_dict(
-            {"train_loss": out_step["loss"], "train_acc": self.train_accuracy.compute()}
+            {
+                "train_loss": out_step["loss"],
+                "train_acc": self.train_accuracy.compute(),
+                "train_prec": self.train_precision.compute(),
+                "train_rec": self.train_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -169,9 +200,20 @@ class BirdcallClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.val_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.val_accuracy(x, y)
+        self.val_precision(x, y)
+        self.val_recall(x, y)
+
         self.log_dict(
-            {"val_loss": out_step["loss"], "val_acc": self.val_accuracy.compute()}
+            {
+                "val_loss": out_step["loss"],
+                "val_acc": self.val_accuracy.compute(),
+                "val_prec": self.val_precision.compute(),
+                "val_rec": self.val_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -180,11 +222,31 @@ class BirdcallClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.test_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.test_accuracy(x, y)
+        self.test_precision(x, y)
+        self.test_recall(x, y)
+
         self.log_dict(
-            {"test_loss": out_step["loss"], "test_acc": self.test_accuracy.compute()}
+            {
+                "test_acc": self.test_accuracy.compute(),
+                "test_prec": self.test_precision.compute(),
+                "test_rec": self.test_recall.compute(),
+            }
         )
-        return out_step["loss"]
+
+        self.logger.experiment.log(
+            {
+                "conf_mat": wandb.plot.confusion_matrix(
+                    probs=None,
+                    preds=x.cpu(),
+                    y_true=y.cpu(),
+                    class_names=["nocall", "call"],
+                )
+            }
+        )
 
     def configure_optimizers(self):
         opt = hydra.utils.instantiate(
@@ -206,14 +268,24 @@ class JointClassification(pl.LightningModule):
     def __init__(self, out_features: int, **kwargs):
         super(JointClassification, self).__init__()
         self.save_hyperparameters()
-        self.model = model.JointModel(out_features=out_features)
+        self.model = JointModel(out_features=out_features)
 
         self.loss = nn.CrossEntropyLoss()
 
-        metric = torchmetrics.Accuracy()
-        self.train_accuracy = metric.clone()
-        self.val_accuracy = metric.clone()
-        self.test_accuracy = metric.clone()
+        accuracy = torchmetrics.Accuracy()
+        self.train_accuracy = accuracy.clone()
+        self.val_accuracy = accuracy.clone()
+        self.test_accuracy = accuracy.clone()
+
+        precision = torchmetrics.Precision()
+        self.train_precision = precision.clone()
+        self.val_precision = precision.clone()
+        self.test_precision = precision.clone()
+
+        recall = torchmetrics.Recall()
+        self.train_recall = recall.clone()
+        self.val_recall = recall.clone()
+        self.test_recall = recall.clone()
 
     def forward(self, xb):
         logits = self.model(xb)
@@ -230,9 +302,20 @@ class JointClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.train_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.train_accuracy(x, y)
+        self.train_precision(x, y)
+        self.train_recall(x, y)
+
         self.log_dict(
-            {"train_loss": out_step["loss"], "train_acc": self.train_accuracy.compute()}
+            {
+                "train_loss": out_step["loss"],
+                "train_acc": self.train_accuracy.compute(),
+                "train_prec": self.train_precision.compute(),
+                "train_rec": self.train_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -241,9 +324,20 @@ class JointClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.val_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.val_accuracy(x, y)
+        self.val_precision(x, y)
+        self.val_recall(x, y)
+
         self.log_dict(
-            {"val_loss": out_step["loss"], "val_acc": self.val_accuracy.compute()}
+            {
+                "val_loss": out_step["loss"],
+                "val_acc": self.val_accuracy.compute(),
+                "val_prec": self.val_precision.compute(),
+                "val_rec": self.val_recall.compute(),
+            }
         )
         return out_step["loss"]
 
@@ -252,11 +346,31 @@ class JointClassification(pl.LightningModule):
         specs = batch["spectrograms"]
         out_step = self.step(x=specs, y=targets)
 
-        self.test_accuracy(out_step["preds"], targets)
+        x = out_step["preds"]
+        y = targets
+
+        self.test_accuracy(x, y)
+        self.test_precision(x, y)
+        self.test_recall(x, y)
+
         self.log_dict(
-            {"test_loss": out_step["loss"], "test_acc": self.test_accuracy.compute()}
+            {
+                "test_acc": self.test_accuracy.compute(),
+                "test_prec": self.test_precision.compute(),
+                "test_rec": self.test_recall.compute(),
+            }
         )
-        return out_step["loss"]
+
+        self.logger.experiment.log(
+            {
+                "conf_mat": wandb.plot.confusion_matrix(
+                    probs=None,
+                    preds=x.cpu(),
+                    y_true=y.cpu(),
+                    class_names=["nocall", "call"],
+                )
+            }
+        )
 
     def configure_optimizers(self):
         opt = hydra.utils.instantiate(
