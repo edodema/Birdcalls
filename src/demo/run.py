@@ -118,4 +118,5 @@ else:
     model = models[0]
     _, pred = model(spectrogram)
     pred = get_prediction(pred, mode=mode)
-    st.write(f"Prediction: {pred}")
+
+    st.write(f"Prediction: {translate_detection(target, mode=mode)}")
