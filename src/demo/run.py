@@ -86,7 +86,19 @@ mode = st.sidebar.selectbox(
 )
 run = st.sidebar.button("Run")
 
-# TODO: Add the disclaimer on the -
+# Disclaimer.
+message = "TODO"
+if mode == cfg.demo.mode.soundscapes:
+    message = "Given an audio file the model considers a 5 seconds window and tries to guess if there is a bird or not."
+elif mode == cfg.demo.mode.birdcalls:
+    message = "Given an audio file the model considers a 5 seconds window and tries to guess the bird singing."
+elif mode == cfg.demo.mode.split:
+    pass
+elif mode == cfg.demo.mode.joint:
+    message = "Given an audio file the model considers a 5 seconds window and tries to guess the bird singing, if there is one."
+
+st.sidebar.write(message)
+
 
 # Get file path.
 csv_path = get_csv_path(mode)
