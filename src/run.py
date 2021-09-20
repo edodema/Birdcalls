@@ -1,7 +1,5 @@
 from typing import List
 import hydra
-import numpy as np
-import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 from hydra.core.hydra_config import HydraConfig
 from pathlib import Path
@@ -336,64 +334,3 @@ def main(cfg: DictConfig):
 
     # Train joint.
     joint_run(cfg)
-
-    # TODO
-    # from src.common.utils import split_dataset
-    #
-    # csv = Path("/home/edo/Documents/Code/Birdcalls/out/birdcalls_balanced.csv")
-    # df = pd.read_csv(csv)
-    # train_df, eval_df = split_dataset(csv=csv, autosave=False, p=0.7)
-    # val_df, test_df = split_dataset(csv=eval_df, autosave=False, p=0.5)
-    #
-    # train_df.to_csv(
-    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/birdcalls.csv",
-    #     index=False,
-    # )
-    #
-    # val_df.to_csv(
-    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/birdcalls.csv",
-    #     index=False,
-    # )
-    #
-    # test_df.to_csv(
-    #     "/home/edo/Documents/Code/Birdcalls/out/split_datasets/test/birdcalls.csv",
-    #     index=False,
-    # )
-
-    # # For our purposes we only care about the primary label.
-    # def get_primary_label(birds: str):
-    #     """
-    #     Get the first bird of a string of birds, separated by a space.
-    #     :param birds: Array of birds.
-    #     :return: The first bird.
-    #     """
-    #     return birds.split()[0]
-    #
-    # get_primary_label_v = np.vectorize(get_primary_label)
-    # birds = get_primary_label_v(dg["birds"].values)
-    #
-    # import matplotlib.pyplot as plt
-    #
-    # n = len(set(birds))
-    # plt.figure()
-    # plt.hist(x=birds, bins=np.arange(n + 1) - 0.5, linewidth=1, edgecolor="white")
-    # plt.xticks(range(0, n, 3), rotation=45)
-    # # plt.title("Soundscapes' balanced classes distribution")
-    # plt.tight_layout()
-    # plt.show()
-
-    # from src.common.utils import split_dataset
-    #
-    # file = "/home/edo/Documents/Code/Birdcalls/out/soundscapes_birds_balanced.csv"
-    # train, eval = split_dataset(
-    #     file,
-    #     save_path_train="/home/edo/Documents/Code/Birdcalls/out/split_datasets/train/soundscapes_birds_balanced.csv",
-    #     save_path_eval="/home/edo/Documents/Code/Birdcalls/out/split_datasets/val/soundscapes_birds_balanced.csv",
-    #     autosave=True,
-    # )
-    # print(train, eval)
-    # pass
-
-
-if __name__ == "__main__":
-    main()

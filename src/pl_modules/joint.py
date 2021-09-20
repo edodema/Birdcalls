@@ -1,5 +1,51 @@
 from torch import nn
-from src.pl_modules.model import Extraction
+from typing import List, Tuple
+from src.pl_modules.model import CNNRes
+
+
+class Extraction(nn.Module):
+    """
+    Feature extraction backbone.
+    """
+
+    def __init__(
+        self,
+        image_shape: Tuple[int, int, int],
+        res_kernels: List,
+        pool: int,
+    ):
+        super(Extraction, self).__init__()
+        self.level = len(res_kernels)
+
+        # Residual blocks and convolutions in between them used to change dimensionality/filter sizes.
+        # We can fix out_channels since all audio data has originally one channel.
+        self.res = nn.Sequential()
+        in_channels = image_shape[0]
+        for n, kernel in enumerate(res_kernels):
+            res = CNNRes(in_channels=in_channels, kernel_size=kernel)
+            cnn = nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=2 * in_channels,
+                kernel_size=kernel,
+                stride=(2, 2),
+            )
+
+            self.res.add_module(name=f"CNNRes{n+1}", module=res)
+            self.res.add_module(name=f"CNN{n+1}", module=cnn)
+
+            in_channels *= 2
+
+        # Output pooling.
+        self.pool = nn.AvgPool2d(kernel_size=pool)
+
+    def forward(self, xb):
+        # Residuals.
+        out = self.res(xb)
+
+        # Pooling.
+        out = self.pool(out)
+
+        return out
 
 
 class JointModel(nn.Module):
@@ -8,12 +54,6 @@ class JointModel(nn.Module):
 
         self.ext = Extraction(
             image_shape=(1, 128, 313),
-            att_channels=[1, 3, 1],
-            att_kernels=[1, 3, 1],
-            att_paddings=[0, 1, 0],
-            att_strides=[1, 1, 1],
-            att_num_heads=1,
-            pool_att=1,
             res_kernels=[3, 5],
             pool=1,
         )

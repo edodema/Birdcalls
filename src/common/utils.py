@@ -12,7 +12,6 @@ Utilities that come handy.
     - plot_audio_len
 
 - Spectrogram computing:
-    - plot_waveform
     - plot_spectrogram
     - compute_spectrogram
     - get_spectrogram
@@ -21,7 +20,7 @@ Utilities that come handy.
     - save_vocab
     - load_vocab
     - get_birds_names
-    - birdcall_vocabs
+    - get_ordered_vocab
     - get_most_common_class
     - random_oversampler
     - split_dataset
@@ -61,10 +60,12 @@ def get_env(env_name: str, default: Optional[str] = None) -> str:
     Safely read an environment variable.
     Raises errors if it is not defined or it is empty.
 
-    :param env_name: the name of the environment variable
-    :param default: the default (optional) value for the environment variable
+    Args:
+        env_name: the name of the environment variable
+        default: the default (optional) value for the environment variable
 
-    :return: the value of the environment variable
+    Returns:
+        The value of the environment variable
     """
     if env_name not in os.environ:
         if default is None:
@@ -90,7 +91,8 @@ def load_envs(env_file: Optional[str] = None) -> None:
 
     It is possible to define all the system specific variables in the `env_file`.
 
-    :param env_file: the file that defines the environment variables to use. If None
+    Args:
+        env_file: the file that defines the environment variables to use. If None
                      it searches for a `.env` file in the project.
     """
     dotenv.load_dotenv(dotenv_path=env_file, override=True)
@@ -169,8 +171,8 @@ def log_hyperparameters(
 def plot_audio_len(path: Union[str, Path]):
     """
     Plot the frequency of the audio files' length.
-    :param path: Path of the directory containing data.
-    :return:
+    Args:
+        path: Path of the directory containing data.
     """
     counter = Counter()
 
@@ -209,51 +211,17 @@ def plot_audio_len(path: Union[str, Path]):
 
 
 # https://pytorch.org/tutorials/beginner/audio_preprocessing_tutorial.html#preparing-data-and-utility-functions-skip-this-section
-def plot_waveform(
-    waveform, sample_rate, title="Waveform", xlim=None, ylim=None
-) -> None:
-    """
-    TODO: Maybe remove, is it necessary?
-    :param waveform:
-    :param sample_rate:
-    :param title:
-    :param xlim:
-    :param ylim:
-    :return:
-    """
-    waveform = waveform.numpy()
-
-    num_channels, num_frames = waveform.shape
-    time_axis = torch.arange(0, num_frames) / sample_rate
-
-    figure, axes = plt.subplots(num_channels, 1)
-    if num_channels == 1:
-        axes = [axes]
-    for c in range(num_channels):
-        axes[c].plot(time_axis, waveform[c], linewidth=1)
-        axes[c].grid(True)
-        if num_channels > 1:
-            axes[c].set_ylabel(f"Channel {c+1}")
-        if xlim:
-            axes[c].set_xlim(xlim)
-        if ylim:
-            axes[c].set_ylim(ylim)
-    figure.suptitle(title)
-    plt.show(block=False)
-
-
-# https://pytorch.org/tutorials/beginner/audio_preprocessing_tutorial.html#preparing-data-and-utility-functions-skip-this-section
 def plot_spectrogram(
     spec, title=None, ylabel="freq_bin", aspect="auto", xmax=None
 ) -> None:
     """
     Plot a spectrogram.
-    :param spec: Spectrogram tensor.
-    :param title: Plot title.
-    :param ylabel: Label on y-axis.
-    :param aspect:
-    :param xmax:
-    :return:
+    Args:
+        spec: Spectrogram tensor.
+        title: Plot title.
+        ylabel: Label on y-axis.
+        aspect: Aspect ratio.
+        xmax: Maximum value on the x-axis.
     """
     fig, axs = plt.subplots(1, 1)
     axs.set_title(title or "Spectrogram (db)")
@@ -278,15 +246,15 @@ def compute_spectrogram(
 ) -> torch.Tensor:
     """
     Get the spectrogram of an audio file.
-    :param audio: Path of the audio file or a (waveform, sample_rate) tuple.
-    :param n_fft:
-    :param win_length:
-    :param hop_length:
-    :param n_mels:
-    :param mel: If true we want melodic spectrograms.
-    :param time_window: A tuple of two time values such we get the sliced spectrogram w.r.t. that window.
-    :param kwargs:
-    :return:
+    Args:
+        audio: Path of the audio file or a (waveform, sample_rate) tuple.
+        n_fft:
+        win_length:
+        hop_length:
+        n_mels:
+        mel: If true we want melodic spectrograms.
+        time_window: A tuple of two time values such we get the sliced spectrogram w.r.t. that window.
+        kwargs:
     """
     # See if we have to deal with an audio file or (waveform, sample rate).
     if isinstance(audio, Path):
@@ -339,9 +307,9 @@ def get_spectrogram(
 ):
     """
     Returns the spectrogram of an audio file.
-    :param audio: Path of the audio file or a (waveform, sample_rate) tuple.
-    :param time_window: A tuple of two time values such we get the sliced spectrogram w.r.t. that window.
-    :return:
+    Args:
+        audio: Path of the audio file or a (waveform, sample_rate) tuple.
+        time_window: A tuple of two time values such we get the sliced spectrogram w.r.t. that window.
     """
     cfg = hydra.compose(config_name="default")
 
@@ -364,9 +332,9 @@ def get_spectrogram(
 def save_vocab(vocab: Dict, path: Union[str, Path]) -> None:
     """
     Save vocabulary to a JSON file.
-    :param vocab: Dictionary object.
-    :param path: Path to file.
-    :return:
+    Args:
+        vocab: Dictionary object.
+        path: Path to file.
     """
     dump = json.dumps(vocab)
     f = open(path, "w")
@@ -377,8 +345,10 @@ def save_vocab(vocab: Dict, path: Union[str, Path]) -> None:
 def load_vocab(path: Union[str, Path]) -> Dict:
     """
     Load vocabulary from a JSON file.
-    :param path: Path to file.
-    :return: Dictionary object i.e. the vocabulary.
+    Args:
+        path: Path to file.
+    Returns:
+        Dictionary object i.e. the vocabulary.
     """
     f = open(path, "r")
     vocab = json.load(f)
@@ -414,11 +384,11 @@ def birdcall_vocabs(
 ) -> None:
     """
     Save vocabularies mapping birds to their indexes and vice versa.
-    :param birdcalls_path: Path of the parent directory under which calls are nested.
-    :param idx2bird_path: Location where the vocabulary index to bird is saved.
-    :param idx2bird_path: Location where the vocabulary bird to index is saved.
-    :param kwargs:
-    :return:
+    Args:
+        birdcalls_path: Path of the parent directory under which calls are nested.
+        idx2bird_path: Location where the vocabulary index to bird is saved.
+        idx2bird_path: Location where the vocabulary bird to index is saved.
+        kwargs:
     """
     birdcalls_path = Path(birdcalls_path)
 
@@ -481,14 +451,16 @@ def random_oversampler(
 ):
     """
     A random oversampler for unbalanced datasets.
-    :param df: DataFrame object.
-    :param target: A tuple containing the column of the dataframe and its respective class we want to augment.
-    If no target is specified then all classes are automatically balanced to the most frequent one.
-    :param n_samples: The number of samples we want to reach, often the length of the most represented class.
-    :param mode: Defines how we want to filter data:
-        - "==" Then we filter for samples whose value is equal to target[1].
-        - "!=" Then we filter for samples whose value is different from target[1].
-    :return: An augmented DataFrame.
+    Args:
+        df: DataFrame object.
+        target: A tuple containing the column of the dataframe and its respective class we want to augment.
+            If no target is specified then all classes are automatically balanced to the most frequent one.
+        n_samples: The number of samples we want to reach, often the length of the most represented class.
+        mode: Defines how we want to filter data:
+            - "==" Then we filter for samples whose value is equal to target[1].
+            - "!=" Then we filter for samples whose value is different from target[1].
+    Returns:
+        An augmented DataFrame.
     """
 
     # - If target value is None n_samples and mode must be too.
@@ -562,12 +534,14 @@ def split_dataset(
 ):
     """
     Split a CSV dataset in train and evaluation according to percentage p.
-    :param csv_path: Path of the dataset as a CSV file.
-    :param save_path_train: Path to save to the train CSV file.
-    :param save_path_eval: Path to save to the eval CSV file.
-    :param p: Percentage of the train set expressed as a float.
-    :param autosave: If true save the files, save_path_train and save_path_eval must be specified.
-    :return: Train and eval dataframes.
+    Args:
+        csv_path: Path of the dataset as a CSV file.
+        save_path_train: Path to save to the train CSV file.
+        save_path_eval: Path to save to the eval CSV file.
+        p: Percentage of the train set expressed as a float.
+        autosave: If true save the files, save_path_train and save_path_eval must be specified.
+    Returns:
+        Train and eval dataframes.
     """
     assert (
         0 <= p and p <= 1
@@ -599,11 +573,13 @@ def cnn_size(
 ) -> Tuple[int, int]:
     """
     Return the size of the output of a convolutional layer.
-    :param input: Size of the input image.
-    :param kernel: Kernel size, it is assumed to be a square.
-    :param padding: Padding size.
-    :param stride: Stride.
-    :return: The output size.
+    Args:
+        input: Size of the input image.
+        kernel: Kernel size, it is assumed to be a square.
+        padding: Padding size.
+        stride: Stride.
+    Returns:
+        The output size.
     """
     if isinstance(kernel, int):
         kernel = (kernel, kernel)
@@ -628,12 +604,14 @@ def multiple_cnn_size(
 ) -> Tuple[int, int]:
     """
     Return the size of the output of more than one convolutional layer. This function can replace cnn_size.
-    :param input: Size of the input image.
-    :param kernel: Kernel size, it is assumed to be a square.
-    :param padding: Padding size.
-    :param stride: Stride.
-    :param n_convs: Number of convolutions.
-    :return: The output size.
+    Args:
+        input: Size of the input image.
+        kernel: Kernel size, it is assumed to be a square.
+        padding: Padding size.
+        stride: Stride.
+        n_convs: Number of convolutions.
+    Returns:
+        The output size.
     """
     if isinstance(kernel, int):
         kernel = (kernel, kernel)
@@ -665,10 +643,12 @@ def pad_size(
 ) -> Tuple[int, int]:
     """
     Return the size of the output of a convolutional layer.
-    :param input: Size of the input image.
-    :param padding: Pooling size.
-    :param stride: Stride.
-    :return: The output size.
+    Args:
+        input: Size of the input image.
+        padding: Pooling size.
+        stride: Stride.
+    Returns:
+        The output size.
     """
     if isinstance(padding, int):
         padding = (padding, padding)
@@ -687,9 +667,11 @@ def pool_size(
 ) -> Tuple[int, int]:
     """
     Return the size of the output of a convolutional layer.
-    :param input: Size of the input image.
-    :param pooling: Pooling size.
-    :return: The output size.
+    Args:
+        input: Size of the input image.
+        pooling: Pooling size.
+    Returns:
+        The output size.
     """
     if isinstance(pooling, int):
         pooling = (pooling, pooling)
@@ -702,10 +684,12 @@ def pool_size(
 def fc_params(in_features: int, out_features: int, bias: bool = True):
     """
     Return the number of parameters in a linear layer.
-    :param in_features: Size of input vector.
-    :param out_features: Size of output vector.
-    :param bias: If true count bias too.
-    :return: The number of parameters.
+    Args:
+        in_features: Size of input vector.
+        out_features: Size of output vector.
+        bias: If true count bias too.
+    Returns:
+        The number of parameters.
     """
     m = out_features + 1 if bias else out_features
     return in_features * m
@@ -714,11 +698,13 @@ def fc_params(in_features: int, out_features: int, bias: bool = True):
 def cnn_params(kernel: int, in_channels: int, out_channels: int, bias: bool = True):
     """
     Return the number of parameters in a CNN.
-    :param kernel: Kernel size, it is assumed to be squared.
-    :param in_channels: Number of input channels.
-    :param out_channels: Number of output channels i.e. number of kernels.
-    :param bias: If true count bias as well.
-    :return: The number of parameters.
+    Args:
+        kernel: Kernel size, it is assumed to be squared.
+        in_channels: Number of input channels.
+        out_channels: Number of output channels i.e. number of kernels.
+        bias: If true count bias as well.
+    Returns:
+        The number of parameters.
     """
     w = kernel * kernel * in_channels * out_channels
     b = out_channels if bias else 0
@@ -730,11 +716,13 @@ def cnnxfc_params(
 ):
     """
     Return the number of parameters in a CNN followe by a linear layer.
-    :param image_size: Size of the output of the CNN.
-    :param n_channels: Number of the image's channels.
-    :param out_features: Neurons in the linear layer.
-    :param bias: If true count bias.
-    :return: Number of parameters.
+    Args:
+        image_size: Size of the output of the CNN.
+        n_channels: Number of the image's channels.
+        out_features: Neurons in the linear layer.
+        bias: If true count bias.
+    Returns:
+        Number of parameters.
     """
     w, h = image_size
     weights = w * h * n_channels * out_features
@@ -750,11 +738,13 @@ def cnn_kernel(
 ):
     """
     Given all the parameters of a convolution, except the filter's size, compute it.
-    :param input: Size of the input image.
-    :param output: Size of the feature map.
-    :param padding: Padding size.
-    :param stride: Stride.
-    :return: The kernel size.
+    Args:
+        input: Size of the input image.
+        output: Size of the feature map.
+        padding: Padding size.
+        stride: Stride.
+    Returns:
+        The kernel size.
     """
     if isinstance(padding, int):
         padding = (padding, padding)

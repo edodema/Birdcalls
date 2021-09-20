@@ -4,13 +4,6 @@ import torch
 from torch import nn
 from src.common.utils import (
     cnn_size,
-    pad_size,
-    fc_params,
-    cnn_params,
-    cnnxfc_params,
-    pool_size,
-    cnn_kernel,
-    multiple_cnn_size,
 )
 
 # N.B. It is recommended to choose odd kernels or things could break up.

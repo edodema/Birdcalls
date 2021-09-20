@@ -7,7 +7,6 @@
     - translate_detection
 
 - Data manipulation:
-    - get_csv_path
     - get_sample
     - get_tensor
     - get_predictions
@@ -28,7 +27,7 @@ from src.common.utils import (
     IDX2BIRD,
     load_vocab,
 )
-from src.pl_data.dataset import SoundscapeDataset, BirdcallDataset, JointDataset
+from src.pl_data.dataset import JointDataset
 
 idx2bird = load_vocab(IDX2BIRD)
 
@@ -49,14 +48,6 @@ def get_hydra_cfg(config_name: str = "default") -> DictConfig:
 
 cfg = get_hydra_cfg()
 
-MODES = {
-    "empty": cfg.demo.mode.empty,
-    "soundscapes": cfg.demo.mode.soundscapes,
-    "birdcalls": cfg.demo.mode.birdcalls,
-    "split": cfg.demo.mode.split,
-    "joint": cfg.demo.mode.joint,
-}
-
 
 def draw_spectrogram(spectrogram):
     """
@@ -75,48 +66,21 @@ def draw_spectrogram(spectrogram):
     return fig
 
 
-def translate_detection(x, mode: str):
+def translate_detection(x):
     """
     Just get the detection prediction in a human readable way.
     Args:
         x: What we want to translate.
-        mode: The selected mode.
 
     Returns:
         The human readable prediction.
     """
-    if mode == MODES["soundscapes"]:
-        x = "No" if x == 0 else "Yes"
-    elif mode == MODES["birdcalls"]:
-        pass
-    elif mode == MODES["joint"]:
-        if x == "nocall":
-            x = "No"
-        else:
-            scientific, common = load_vocab(path=cfg.demo.bird_names)[x]
-            x = common + " (" + scientific + ")"
-    return x
-
-
-def get_csv_path(mode: str):
-    """
-    Just a wrapper to get the correct CSV path.
-    Args:
-        mode: The selected mode.
-
-    Returns:
-        The corresponding filepath.
-    """
-    if mode == MODES["soundscapes"]:
-        return cfg.demo.csv.soundscapes
-    elif mode == MODES["birdcalls"]:
-        return cfg.demo.csv.birdcalls
-    elif mode == MODES["split"]:
-        return cfg.demo.csv.soundscapes
-    elif mode == MODES["joint"]:
-        return cfg.demo.csv.joint
+    if x == "nocall":
+        x = "No"
     else:
-        return None
+        scientific, common = load_vocab(path=cfg.demo.bird_names)[x]
+        x = common + " (" + scientific + ")"
+    return x
 
 
 def get_sample(csv_path: Union[str, Path]) -> pd.DataFrame:
@@ -136,13 +100,12 @@ def get_sample(csv_path: Union[str, Path]) -> pd.DataFrame:
 
 
 def get_tensor(
-    sample: pd.DataFrame, mode: str
+    sample: pd.DataFrame,
 ) -> Tuple[Union[str, Path], int, torch.Tensor, torch.Tensor]:
     """
     Get a tensor out of a DataFrame sample.
     Args:
         sample: The sample obtained by get_sample.
-        mode: The mode we are in.
 
     Returns:
         - The path of the audio file.
@@ -150,76 +113,27 @@ def get_tensor(
         - The spectrogram tensor.
         - The target class.
     """
-    if mode == MODES["soundscapes"] or mode == MODES["split"]:
-        row_id, site, audio_id, seconds, birds = SoundscapeDataset.get_columns(
-            df=sample
-        )
-        spectrogram, target = SoundscapeDataset.get_tensor_data(
-            audio_id=audio_id, seconds=seconds, birds=birds
-        )
+    idx2bird["397"] = "nocall"
 
-        # Get audio path.
-        path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
+    row_id, site, audio_id, seconds, birds = JointDataset.get_columns(df=sample)
+    spectrogram, target = JointDataset.get_tensor_data(
+        audio_id=audio_id, seconds=seconds, birds=birds
+    )
 
-        return path, seconds[0] - 5, spectrogram, target.to(int).item()
+    # Get audio path.
+    path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
 
-    elif mode == MODES["birdcalls"]:
-        # We need to instantiate a dummy dataset object due to BirdcallDataset.get_tensor_data not being static.
-        # To do that we set both online and load to True, thus the dataset does nothing.
-        birdcalls = BirdcallDataset(
-            csv_path=None,
-            standard_len=cfg.data.birdcalls_datamodule.datasets.val.standard_len,
-            online=True,
-            debug=-1,
-            load=True,
-        )
-
-        (
-            primary_label,
-            scientific_name,
-            common_name,
-            filename,
-            rating,
-        ) = BirdcallDataset.get_columns(df=sample)
-        spectrogram, target = birdcalls.get_tensor_data(
-            primary_labels=primary_label, filenames=filename
-        )
-
-        # Get the audio file path.
-        path = cfg.demo.audio_dir.birdcalls + "/" + primary_label[0] + "/" + filename[0]
-
-        return path, 0, spectrogram, idx2bird[str(target[0].item())]
-
-    if mode == MODES["joint"]:
-        idx2bird["397"] = "nocall"
-
-        row_id, site, audio_id, seconds, birds = JointDataset.get_columns(df=sample)
-        spectrogram, target = JointDataset.get_tensor_data(
-            audio_id=audio_id, seconds=seconds, birds=birds
-        )
-
-        # Get audio path.
-        path = list(SOUNDSCAPES_DIR.glob(audio_id[0] + "*"))[0]
-
-        return path, seconds[0] - 5, spectrogram, idx2bird[str(target[0].item())]
+    return path, seconds[0] - 5, spectrogram, idx2bird[str(target[0].item())]
 
 
-def get_prediction(pred, mode: str):
+def get_prediction(pred):
     """
     Outputs a prediction in a way consistent to the selected mode.
     Args:
         pred: The output prediction of a model.
-        mode: The selected mode.
 
     Returns:
         The output value, it depends on the mode.
     """
-    if mode == MODES["soundscapes"] or mode == MODES["split"]:
-        return translate_detection(pred, mode=mode)
-
-    elif mode == MODES["birdcalls"]:
-        return idx2bird[str(pred.item())]
-
-    if mode == MODES["joint"]:
-        idx2bird["397"] = "nocall"
-        return idx2bird[str(pred.item())]
+    idx2bird["397"] = "nocall"
+    return idx2bird[str(pred.item())]

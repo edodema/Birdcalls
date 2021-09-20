@@ -21,7 +21,7 @@ soundscapes_datamodule:
   batch_size:
     train: 32
     val: 32
-    test: 2
+    test: 32
 
   shuffle:
     train: True
@@ -136,7 +136,7 @@ joint_datamodule:
   batch_size:
     train: 3
     val: 3
-    test: 2
+    test: 3
 
   shuffle:
     train: True

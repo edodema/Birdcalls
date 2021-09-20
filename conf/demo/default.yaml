@@ -1,22 +1,5 @@
 bird_names: ${oc.env:BIRD_NAMES}
 
-mode:
-  empty: "-"
-  soundscapes: "Soundscapes"
-  birdcalls: "Birdcalls"
-  split: "Split"
-  joint: "Joint"
+csv: ${oc.env:TEST_SOUNDSCAPES_CSV}
 
-csv:
-  soundscapes: ${oc.env:TEST_SOUNDSCAPES_CSV}
-  birdcalls: ${oc.env:TEST_BIRDCALLS_CSV}
-  joint: ${oc.env:TEST_SOUNDSCAPES_CSV}
-
-audio_dir:
-  birdcalls: ${oc.env:BIRDCALLS_DIR}
-  soundscapes: ${oc.env:SOUNDSCAPES_DIR}
-
-checkpoint:
-  detection: ${oc.env:MODEL_SOUNDSCAPE_DETECTION}
-  classification:
-  joint: ${oc.env:MODEL_JOINT}
+checkpoint: ${oc.env:MODEL_JOINT}

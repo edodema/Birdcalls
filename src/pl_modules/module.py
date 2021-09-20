@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from src.pl_modules.detection import SoundscapeModel
 from src.pl_modules.classification import BirdcallModel
 from src.pl_modules.joint import JointModel
+from src.common.utils import load_vocab, BIRD2IDX
 
 
 class SoundscapeDetection(pl.LightningModule):
@@ -237,13 +238,17 @@ class BirdcallClassification(pl.LightningModule):
             }
         )
 
+        # Get the list of classes.
+        ordered = sorted(load_vocab(BIRD2IDX).items(), key=lambda item: int(item[1]))
+        classes = [c for c, _ in ordered]
+
         self.logger.experiment.log(
             {
                 "conf_mat": wandb.plot.confusion_matrix(
                     probs=None,
                     preds=x.cpu(),
                     y_true=y.cpu(),
-                    class_names=["nocall", "call"],
+                    class_names=classes,
                 )
             }
         )
@@ -361,13 +366,17 @@ class JointClassification(pl.LightningModule):
             }
         )
 
+        # Get the list of classes.
+        ordered = sorted(load_vocab(BIRD2IDX).items(), key=lambda item: int(item[1]))
+        classes = [c for c, _ in ordered] + ["nocall"]
+
         self.logger.experiment.log(
             {
                 "conf_mat": wandb.plot.confusion_matrix(
                     probs=None,
                     preds=x.cpu(),
                     y_true=y.cpu(),
-                    class_names=["nocall", "call"],
+                    class_names=classes,
                 )
             }
         )
