@@ -334,3 +334,7 @@ def main(cfg: DictConfig):
 
     # Train joint.
     joint_run(cfg)
+
+
+if __name__ == "__main__":
+    main()
