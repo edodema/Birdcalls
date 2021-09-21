@@ -415,21 +415,9 @@ TSWLatexianTemp*
 #  Misc  #
 ##########
 .idea
-data/*
+data
 
-out/*
-#out/split_datasets/train/*
-#out/split_datasets/val/*
-#
-#out/test/birdcalls/*
-#out/test/soundscapes.csv/*
-#
-#out/val/birdcalls/*
-#out/val/soundscapes.csv/*
-
-out/vocabs/*
-
-outputs
+out
 wandb
 venv
 
