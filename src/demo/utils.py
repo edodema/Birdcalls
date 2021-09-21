@@ -57,12 +57,10 @@ def draw_spectrogram(spectrogram):
 
     Returns:
     """
+    import plotly.express as px
+
     spec = np.transpose(librosa.power_to_db(spectrogram[0].numpy()), axes=(1, 2, 0))
-    fig, axs = plt.subplots(1, 1)
-    axs.set_title("Spectrogram (db)")
-    axs.set_ylabel("freq")
-    axs.set_xlabel("frame")
-    axs.imshow(spec, origin="lower", aspect="auto")
+    fig = px.imshow(spec[:, :, 0], origin="lower", aspect="auto")
     return fig
 
 

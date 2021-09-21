@@ -312,7 +312,6 @@ def get_spectrogram(
         time_window: A tuple of two time values such we get the sliced spectrogram w.r.t. that window.
     """
     cfg = hydra.compose(config_name="default")
-
     # Wrapper used to call compute_spectrogram without needing to specify too many parameters.
     def _get_spectrogram(cfg: DictConfig):
         return hydra.utils.call(
