@@ -32,3 +32,13 @@ eBird seems to be better.
 - [ ] Export the plots in W&B and combine them.
 - [ ] Specify seed, our goal is not to have a good on-the-wild ai.
 - [ ] Soundscapes and Joint: 80-10-10, Birdcalls: 70-15-15
+
+## Environment 
+```
+conda create -n Birdcalls
+conda activate Birdcalls
+pip install -r requirements.txt
+```
+```
+./setup.sh -dmo
+```

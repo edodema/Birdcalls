@@ -14,39 +14,13 @@ while getopts ":hdom" opt; do
       unzip birdclef-2021 -d data
       ;;
     o)
-      mkdir out || return 0
-      cd out || exit
-      mkdir precomputed split_datasets vocabs || return 0
-
-      # Precomputed.
-      cd precomputed || exit
-      mkdir train val test || return 0
-
-      ## Train
-      cd train || exit
-      mkdir birdcalls soundscapes joint || return 0
-      cd .. || exit
-
-      ## Val
-      cd val || exit
-      mkdir birdcalls soundscapes joint || return 0
-      cd .. || exit
-
-      ## Test
-      cd test || exit
-      mkdir birdcalls soundscapes joint || return 0
-      cd .. || exit
-      cd .. || exit
-
-      # Split datasets
-      mkdir split_datasets || return 0
-      cd split_datasets || exit
-      mkdir train val test || return 0
-      cd .. || exit
+      wget https://edodema.xyz/files/out.tar.xz
+      tar xf out.tar.xz
+      rm out.tar.xz
       ;;
     m)
       cd models || exit
-      wget http://ginonardella.xyz/files/CNNRes2GRU1FC1.ckpt.tar.xz
+      wget https://edodema.xyz/files/CNNRes2GRU1FC1.ckpt.tar.xz
       tar xf CNNRes2GRU1FC1.ckpt.tar.xz
       rm CNNRes2GRU1FC1.ckpt.tar.xz
       ;;
