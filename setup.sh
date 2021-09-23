@@ -4,14 +4,15 @@
 while getopts ":hdom" opt; do
   case $opt in
     h)
-      echo "
+      echo "./setup.sh [-dom]
         -d Download the dataset.
         -o Setup the out subdirectories.
         -m Download the model for the demo." >&2
       ;;
     d)
       kaggle competitions download -c birdclef-2021
-      unzip birdclef-2021 -d data
+      unzip birdclef-2021.zip -d data
+      rm birdclef-2021.zip
       ;;
     o)
       wget https://edodema.xyz/files/out.tar.xz
@@ -19,9 +20,8 @@ while getopts ":hdom" opt; do
       rm out.tar.xz
       ;;
     m)
-      cd models || exit
       wget https://edodema.xyz/files/CNNRes2GRU1FC1.ckpt.tar.xz
-      tar xf CNNRes2GRU1FC1.ckpt.tar.xz
+      tar xf CNNRes2GRU1FC1.ckpt.tar.xz -C models/
       rm CNNRes2GRU1FC1.ckpt.tar.xz
       ;;
     \?)
