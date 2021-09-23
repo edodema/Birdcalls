@@ -1,9 +1,11 @@
-#Models
-Soundscape detection models.
-In Att the number is the size of the kernel since it is fixed that we have 3 all of the same size.
-In CNNRes is the number of kernels.
+# Models
 
-## CNNRes3FC2GRU4
+Here are showed some models yet not all ones that have been used nor tested, still the the name of a model can broadly describe the definition of models that are not displayed below:
+- In CNNAtt*n* we always have 3 kernels of the same size *n*.
+- In CNNRes*n* the size of the kernels is not fixed, *n* is how many of them we have and in this case the name is not enough to describe the model.
+- GRU*n* and FC*n* means that we have *n* GRUs or FCs layers stacked.
+
+## CNNRes3GRU4FC2
 ```
 =================================================================  
 Layer (type:depth-idx)                   Param #  
@@ -86,7 +88,7 @@ SoundscapeDetection(
   (conf_mat): ConfusionMatrix()  
 )
 ```
-## CNNRes2FC2GRU4
+## CNNRes2GRU4FC2
 ```
 =================================================================  
 Layer (type:depth-idx)                   Param #  
@@ -160,7 +162,7 @@ SoundscapeDetection(
   (conf_mat): ConfusionMatrix()
 )
 ```
-## CNNRes2FC1GRU1
+## CNNRes2GRU1FC1
 ```
 =================================================================
 Layer (type:depth-idx)                   Param #
@@ -207,7 +209,7 @@ SoundscapeDetection(
   )
 )
 ```
-## CNNAtt3CNNRes2FC1GRU4
+## CNNAtt3CNNRes2GRU1FC1
 ```
 ==========================================================================================
 Layer (type:depth-idx)                                            Param #
