@@ -56,6 +56,7 @@ Also from \textit{ResNet} itself I took some numerical techniques to stabilize r
 
 \section{Method}
 What happens when ornithologists recognize a birdcall, do they first detect a sound and then focus to classify it or does their brain automatically recognize the bird species?
+It makes sense to believe it is possible to be so proficient to unconsciously recognize birds, as already happens with familiar sounds ~\cite{kirmse2009familiarity}. 
 Let's call the first approach \textit{split} and the second one \textit{joint}, I tried both of them but only the latter model is covered here due to computational issues with the first one (for those interested, results are still shown on the GitHub repository).
 
 \paragraph*{Preprocessing.}
@@ -121,7 +122,7 @@ Results are reported at table \ref{tab:joint-results}, since datasets have been 
                 Model \\
                 \midrule
                 ResNet18 & 1e-4 & .21 & 92.2\% \\
-                ResNet50 & 1e-4 & - & \% \\
+                ResNet50 & 1e-4 & .52 & 82.3\% \\
                 CNNRes2 & 1e-4 & \textbf{.02} & \textbf{99.1\%} \\
                 CNNAtt5 + CNNRes2 & 1e-4 & .04 & 98.7\% \\
                 \midrule
