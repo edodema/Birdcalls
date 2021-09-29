@@ -6,29 +6,28 @@
 \usepackage{hyperref}
 \usepackage{overpic}
 \usepackage{amssymb}
+\usepackage{lipsum}
 
 \usepackage[accepted]{dlai2021}
 
 %%% STUDENTS: FILL IN WITH YOUR OWN INFORMATION
-\dlaititlerunning{DLAI Project Template (replace with your title)}
+\dlaititlerunning{Ornithology expert system}
 
 \begin{document}
 
 \twocolumn[
 %%% STUDENTS: FILL IN WITH YOUR OWN INFORMATION
-\dlaititle{DLAI Project Template (replace with your title)}
+\dlaititle{BirdCLEF2021: An ornithology expert system}
 
 \begin{center}\today\end{center}
 
 \begin{dlaiauthorlist}
 %%% STUDENTS: FILL IN WITH YOUR OWN INFORMATION
-\dlaiauthor{Luca Moschella}{}
-\dlaiauthor{Antonio Norelli}{}
-\dlaiauthor{Emanuele Rodolà}{}
+\dlaiauthor{Edoardo De Matteis}{}
 \end{dlaiauthorlist}
 
 %%% STUDENTS: FILL IN WITH YOUR OWN INFORMATION
-\dlaicorrespondingauthor{Emanuele Rodolà}{rodola@di.uniroma1.it}
+\dlaicorrespondingauthor{Edoardo De Matteis}{dematteis.1746561@studenti.uniroma1.it}
 
 \vskip 0.3in
 ]
@@ -36,85 +35,116 @@
 \printAffiliationsAndNotice{}
 
 \begin{abstract}
-%
-This is a \LaTeX template for writing your project report, to be submitted as part of the final exam. The template can not be modified (you can not change margins, spaces, etc.), and using this template is mandatory. Please read the main text for further details.
-%
+In this report I approached the BirdCLEF2021 bird classification task, the dataset contains a huge amount of data, making it difficult to work with. 
+I came up with a model that uses only soundscape recording, thus making most of the data privileged, and getting good results.
+The code is available on GitHub: \href{https://github.com/edodema/Birdcalls}{https://github.com/edodema/Birdcalls}
 \end{abstract}
 
-% ------------------------------------------------------------------------------
-\section{Project submission}
+\section{Introduction}
+Birds are sensitive to changes in the ecosystem due to them being high up in the food chain, so monitoring them can give us informations about pollution and the environment.
+While small birds are often difficult to sight they tend to sing a lot, and these calls are generally characteristic of each species, that's why a smart way to identify them is through their call.
+Our goal is to guess a bird's species by its call in a noisy recording, the task is set up as an image classification among $n+1$ classes i.e. $n$ species plus no bird being detected. 
 
-Once you have finished your project, you are required to submit a report using this template. In principle, the only files you need to modify are ``main.tex'' and ``bibliography.tex'' (see Section~\ref{sec:latex} for more details). Hence, you can simply take this document and modify it directly with your own content.
+\paragraph*{Dataset.}
+The BirdCLEF2021 dataset contains recordings of both birds in a controlled environment and noisy soundscapes,  the  latters  being  split  in  5  seconds  windows  and labeled with primary and secondary labels.
+For our purposes I only considered primary labels, that should not be a problem since we are just being conservative, secondary ones are just some of the privileged data that we will ignore, in fact we will not use birds recordings at all and still get good results.
 
-\paragraph*{Limits.}
-The report must have at most 2 pages, without counting the bibliography, which can go to page 3. If you did your project with another student, then your budget is extended to at most 3 pages plus bibliography.
+\section{Related work}
+Many previous works have exploited spectrograms to reduce audio recognition to an image task ~\cite{hamdyaudio} ~\cite{michelashvili2020denoising} ~\cite{xie2021audio}, among them ~\cite{xie2021audio} uses a recurrent layer to extrapolate time sensitive knowlgedge.
+In the same way we canuse attention and one of the basic blocks that will form our model has been inspired by ~\cite{zhang2020resnest}, in which a variation of \textit{ResNet} ~\cite{he2016deep} with split-attention is developed.
+Also from \textit{ResNet} itself I took some numerical techniques to stabilize results.
 
-\paragraph*{Code.} 
-Submitting your code is part of the exam. It need not be public (although we encourage it), but at least we must be able to access it for proper evaluation. One possibility is to put your code on a github repository. Please link the code directly from the report, example link: \url{https://github.com/erodola/DLAI-s2-2021}.
+\section{Method}
+What happens when ornithologists recognize a birdcall, do they first detect a sound and then focus to classify it or does their brain automatically recognize the bird species?
+Let's call the first approach \textit{split} and the second one \textit{joint}, I tried both of them but only the latter model is covered here due to computational issues with the first one (for those interested, results are still shown on the GitHub repository).
 
-% ------------------------------------------------------------------------------
-\section{Report structure}
+\paragraph*{Preprocessing.}
+The dataset recordings, regardless of bird calls or soudscapes, are highly unbalanced (figure \ref{fig:soundscapes_classification_freq}), that's why the dataset is augmented by random oversampling.
+Then it is split in train, validation and test sets by a 80-10-10 ratio and each 5 seconds window in audio tracks is encoded as a spectrogram in mel scale.
+Transforming spectrograms (e.g. random crops) could have led to losing positive data (i.e. a bird singing) and keeping silence, or vice versa, leading to wrong labeling; even if that did not happen it would have not been strange to lose relevant data, due to the task being modeled as seq2seq.   
+Anyway due to computing limitation it was not possible to use all the data so a smaller split of randomly selected data was used during training.
 
-There is no mandatory structure to adopt, but a typical report should look as follows. 1) An \textbf{introduction} section where the problem is presented, and the overall proposed approach is briefly described; 2) a \textbf{related work} section; 3) a \textbf{method} section, where the main methodology used for the project is described; 4) experimental \textbf{results} (qualitative, quantitative, or both); 5) \textbf{discussion and conclusions}.
-
-% ------------------------------------------------------------------------------
-\section{Using \LaTeX}\label{sec:latex}
-
-If this is your first time using \LaTeX, here are a few common instructions that you may find useful. Please read this while looking at the source code.
-
-\paragraph*{Formulas.}
-You can write formulas inline, such as $x^2$, or you can put them in their own environment, for example:
-%
-\begin{equation}\label{eq:dirichlet}
-\lambda_i = \int_\mathcal{X} \langle \nabla \phi_i(x), \nabla \phi_i(x) \rangle dx \,.
-\end{equation}
-
-You can also refer to formulas without having to write their equation number by hand, such as Equation~\eqref{eq:dirichlet}.
-
-\paragraph*{Figures.}
-You can and are encouraged to include figures. See an example with Figure~\ref{fig:torus}.
-
-\begin{figure}[t]
+\begin{figure}
     \centering
-    \begin{overpic}[width=0.99\linewidth]{./torus.png}
-    \put(-1, 21){\color{blue}\footnotesize $\mathcal{M}_2$ }
-    \put(13, 12){\color{red}\footnotesize $\mathcal{M}_1$ }
-    \put(93, 30){\footnotesize $\mathcal{Z}$ }
-    \put(79, 26){\scriptsize $z_2$ }
-    \put(88, 26){\scriptsize $z_1$ }
-    \end{overpic}
-    \caption{In the figure caption, you can write what you want including formulas, e.g. $\mathcal{X} \subset \mathbb{R}^3$. Notice that in this figure, we added mathematical symbols on top of the image by using the overpic command.}
-    \label{fig:torus}
+    \includegraphics[scale=.35]{images/soundscapes_distribution_birds.png}
+    \caption{Primary label distribution in soundscape recordings.}
+    \label{fig:soundscapes_classification_freq}
 \end{figure}
 
-\paragraph*{Table.}
-Tables can be used to report quantitative results, here is one random example:
+\paragraph*{CNNAtt.}
+This custom defined layer expoits multi-head attention layers to build a seq2seq model with the intent to grasp time-series knowledge.
+First the spectrogram passes through three different convolution pipelines, each one used respectively as a query, key and value for the attention.
+The RNNs in the attention layers work on tensor rows independently, this means that we would learn looking at frequencies with no connection whatsoever between them, thus a second attention layer works on transposed spectrograms' feature images.
+The two representations are then concatenated to get a 2 channel image.
+As a note, when we refer to a CNNAtt$k$ block it means that convolutions have all the same kernel size $k$.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=.3]{images/cnn_att.png}
+    \caption{A CNNAtt block.}
+    \label{fig:cnnatt}
+\end{figure}
+
+\paragraph*{CNNRes}
+Residual networks are effective at reducing error when dealing with deep networks, and I tried one pretrained \textit{ResNet18} model as a feature extraction backbone.
+Also this simpler residual network has been defined, it employs six convolutions of the same kernel size among with two residual paths between them (figure \ref{fig:cnnres}).
+Is possible to stack $n$ layers one on top of the other, in such cases we will write CNNRes$n$, as a rule the number of kernels stays the same when the feature map has the same size as the input image, and it is doubled when feature map has half the size of the image ~\cite{he2016deep}.
+There are no residuals between different CNNRes block therefore there is no need in dealing with tensor with different shape. 
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=.25]{images/cnn_res.png}
+    \caption{A CNNRes block.}
+    \label{fig:cnnres}
+\end{figure}
+
+The afore mentioned layers build up the feature extraction backbone, between CNNAtt and CNNRes we have another convolution to deal with the number of filters.
+After that we have $m$ bilinear GRU layers as a seq2seq model to extract other sequential knowledge, and last a linear layer to output logits.
+
+As a loss we use a classic cross binary entropy.
+
+\section{Results}
+Look at table \ref{tab:joint-results}, 
 
 \begin{table}[h!]
-\caption{Performance comparison.}
-\label{tab:results}
-\begin{center}
-\begin{small}
-\begin{tabular}{p{0.16\linewidth} | ccccc}
-\toprule
-& \multirow{2}{0.1\linewidth}{$\beta$ VAE}& \multirow{2}{0.1\linewidth}{DCI Dis.}& \multirow{2}{0.1\linewidth}{MIG}& \multirow{2}{0.1\linewidth}{MIG-PCA}& \multirow{2}{0.1\linewidth}{MIG-KM}\\
-\#factors \\
-\midrule
-One      & 100\% & \textbf{99.0\%} &  63.7\% & 73.5\% &  69.2\%  \\
-Variable & 98.9\% & 94.9\% & 62.3\% &  70.5\%& \textbf{66.9\%} \\
-\bottomrule
-\end{tabular}
-\end{small}
-\end{center}
-\vspace{-0.5cm}
+    \caption{Performance comparison.}
+    \label{tab:joint-results}
+    \begin{center}
+        \begin{small}
+            \begin{tabular}{p{0.32\linewidth} | cc}
+                \toprule
+                & \multirow{2}{0.1\linewidth}{Loss} 
+                & \multirow{2}{0.1\linewidth}{Acc.} \\
+                Model \\
+                \midrule
+                ResNet18 & .21 & 92.2\% \\
+                CNNRes & \textbf{.02} & \textbf{99.1\%} \\
+                CNNAtt + CNNRes & .04 & 98.7\% \\
+                \midrule
+                \midrule
+                Test & - & 99.4\% \\
+                \bottomrule
+            \end{tabular}
+        \end{small}
+    \end{center}
+    \vspace{-0.5cm}
 \end{table}
 
-\paragraph*{Bibliography.}
-This is an example bibliographic reference \cite{anderson2008end}. If you want to add more, you must edit the file ``references.bib''.
+\begin{figure}
+    \centering
+    \includegraphics[scale=.5]{images/val_loss.png}
+    \caption{Validation loss for CNNRes2GRU1FC1.}
+    \label{fig:val-loss}
+\end{figure}
 
+
+
+
+
+\section{Discussion and conclusions}
+Occam's razor
 
 \bibliography{references.bib}
 \bibliographystyle{dlai2021}
 
 \end{document}
-

@@ -414,9 +414,9 @@ TSWLatexianTemp*
 ##########
 #  Misc  #
 ##########
+*.ckpt
 .idea
 data
-
 out
 wandb
 venv
