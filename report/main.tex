@@ -85,7 +85,7 @@ As a note, when we refer to a CNNAtt$k$ block it means that convolutions have al
     \label{fig:cnnatt}
 \end{figure}
 
-\paragraph*{CNNRes}
+\paragraph*{CNNRes.}
 Residual networks are effective at reducing error when dealing with deep networks, and I tried one pretrained \textit{ResNet18} model as a feature extraction backbone.
 Also this simpler residual network has been defined, it employs six convolutions of the same kernel size among with two residual paths between them (figure \ref{fig:cnnres}).
 Is possible to stack $n$ layers one on top of the other, in such cases we will write CNNRes$n$, as a rule the number of kernels stays the same when the feature map has the same size as the input image, and it is doubled when feature map has half the size of the image ~\cite{he2016deep}.
@@ -101,28 +101,32 @@ There are no residuals between different CNNRes block therefore there is no need
 The afore mentioned layers build up the feature extraction backbone, between CNNAtt and CNNRes we have another convolution to deal with the number of filters.
 After that we have $m$ bilinear GRU layers as a seq2seq model to extract other sequential knowledge, and last a linear layer to output logits.
 
-As a loss we use a classic cross binary entropy.
+In our experiments we use a cross entropy loss, and use both models build  from scratch i.e. CNNRes2 (with kernel sizes $3$ and $5$) and CNNAtt5CNNRes2 that adds a CNNAtt block to it, according to the afore-mentioned rules.
+But we also fine-tune pretrained models \textit{ResNet18} and \textit{ResNet50}, with a convolution and a linear layer to match \textit{ResNet}s input and output shapes.
 
 \section{Results}
-Look at table \ref{tab:joint-results}, 
+Training has been done using an \textit{Adam} optimizer with $8$ samples per batch, primarly due to memory limitations but it turned out good sinc we get some nice spikes.
+Results are reported at table \ref{tab:joint-results}, since datasets have been balanced and all classes are equally important it makes sense to use accuracy.
 
 \begin{table}[h!]
-    \caption{Performance comparison.}
+    \caption{Performances are for the validation set with a fixed seed of 42, the test accuracy is reported for CNNRes2 only.}
     \label{tab:joint-results}
     \begin{center}
         \begin{small}
-            \begin{tabular}{p{0.32\linewidth} | cc}
+            \begin{tabular}{p{0.35\linewidth} | ccc}
                 \toprule
-                & \multirow{2}{0.1\linewidth}{Loss} 
-                & \multirow{2}{0.1\linewidth}{Acc.} \\
+                & \multirow{2}{0.13\linewidth}{LR} 
+                & \multirow{2}{0.13\linewidth}{Loss $\downarrow$} 
+                & \multirow{2}{0.13\linewidth}{Acc. $\uparrow$} \\
                 Model \\
                 \midrule
-                ResNet18 & .21 & 92.2\% \\
-                CNNRes & \textbf{.02} & \textbf{99.1\%} \\
-                CNNAtt + CNNRes & .04 & 98.7\% \\
+                ResNet18 & 1e-4 & .21 & 92.2\% \\
+                ResNet50 & 1e-4 & - & \% \\
+                CNNRes2 & 1e-4 & \textbf{.02} & \textbf{99.1\%} \\
+                CNNAtt5 + CNNRes2 & 1e-4 & .04 & 98.7\% \\
                 \midrule
                 \midrule
-                Test & - & 99.4\% \\
+                Test & - & - & 99.4\% \\
                 \bottomrule
             \end{tabular}
         \end{small}
@@ -137,12 +141,11 @@ Look at table \ref{tab:joint-results},
     \label{fig:val-loss}
 \end{figure}
 
+Occam's razor holds and it seems that a simpler approach is the way to go, pretrained models are not very good but it can happen with transfer learning. 
 
-
-
-
-\section{Discussion and conclusions}
-Occam's razor
+\paragraph*{Future works.}
+It would be nice to have enough resources to train on the whole dataset, this way we could also effectively try the split method.
+Also adding a threshold as an hyperparameter we could consider secondary labels too.
 
 \bibliography{references.bib}
 \bibliographystyle{dlai2021}
