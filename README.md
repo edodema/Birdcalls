@@ -125,6 +125,8 @@ $ ./setup.sh -dmo
 ```
 To get more information on the script run `./setup.sh -h`.
 
+And remember to change absolute paths in `.env.template` and rename it to `.env`!
+
 ## Demo
 Place yourself in the directory `demo` and execute the file `run.sh`
 ```angular2html
