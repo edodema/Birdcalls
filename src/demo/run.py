@@ -52,8 +52,11 @@ st.sidebar.title("Birdcalls :bird:")
 # )
 
 # Disclaimer.
-message = "Given an audio file the model considers a 5 seconds window and tries to guess the bird singing, if there is one."
-st.sidebar.write(message)
+message = """
+This simple demo randomly selects a 5 seconds ambient recording and if a bird is singing guesses its species.
+The code is available <a href="https://github.com/edodema/Birdcalls">here</a>.
+"""
+st.sidebar.markdown(message, unsafe_allow_html=True)
 
 # Get file path.
 csv_path = cfg.demo.csv

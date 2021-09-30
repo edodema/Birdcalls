@@ -89,6 +89,7 @@ As a note, when we refer to a CNNAtt$k$ block it means that convolutions have al
 \paragraph*{CNNRes.}
 Residual networks are effective at reducing error when dealing with deep networks, and I tried one pretrained \textit{ResNet18} model as a feature extraction backbone.
 Also this simpler residual network has been defined, it employs six convolutions of the same kernel size among with two residual paths between them (figure \ref{fig:cnnres}).
+It takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest}, but the number of cardinals is fixed to 3 to use them as keys, queries and values in the multi-head attention layer. 
 Is possible to stack $n$ layers one on top of the other, in such cases we will write CNNRes$n$, as a rule the number of kernels stays the same when the feature map has the same size as the input image, and it is doubled when feature map has half the size of the image ~\cite{he2016deep}.
 There are no residuals between different CNNRes block therefore there is no need in dealing with tensor with different shape. 
 
