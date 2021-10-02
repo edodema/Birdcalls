@@ -40,29 +40,28 @@ The code is available on GitHub at \href{https://github.com/edodema/Birdcalls}{h
 \end{abstract}
 
 \section{Introduction}
-Birds are sensitive to changes in the ecosystem due to them being high up in the food chain, so monitoring them can give us informations about pollution and the environment.
-While small birds are often difficult to sight they tend to sing a lot, and these calls are generally characteristic of each species, that's why a smart way to identify them is through their call.
-Our goal is to guess a bird's species by its call in a noisy recording, the task is set up as an image classification among $n+1$ classes i.e. $n$ species plus no bird being detected. 
+Birds are high up in the food chain, this means that are sensitive to changes in the ecosystem and monitoring them can give us informations about pollution and the environment as a whole.
+Small birds are often difficult to sight and easy to hear, these calls are generally characteristic of each species so throguh them we can identify them in a smart way.
+Our goal is to listen to ambient recordings and guess birds' species through their call, the task is set up as an image classification among $n+1$ classes i.e. $n$ species plus no bird being destected. 
 
 \paragraph*{Dataset.}
-The BirdCLEF2021 dataset contains recordings of both birds in a controlled environment and noisy soundscapes,  the  latters  being  split  in  5  seconds  windows  and labeled with primary and secondary labels.
-For our purposes I only considered primary labels, that should not be a problem since we are just being conservative, secondary ones are just some of the privileged data that we will ignore, in fact we will not use birds recordings at all and still get good results.
+The BirdCLEF2021 dataset contains both recordings of birds in a controlled environment and noisy soundscapes tracks, we will use only the latter.
+Tracks are split by 5 seconds  windows and labeled with primary and secondary gold truths - among other privileged data - but for our purposes we will consider primary ones only; we are being conservative so that should not be a problem.
 
 \section{Related work}
-Many previous works have exploited spectrograms to reduce audio recognition to an image task ~\cite{hamdyaudio} ~\cite{michelashvili2020denoising} ~\cite{xie2021audio}, among them ~\cite{xie2021audio} uses a recurrent layer to extrapolate time sensitive knowlgedge.
-In the same way we canuse attention and one of the basic blocks that will form our model has been inspired by ~\cite{zhang2020resnest}, in which a variation of \textit{ResNet} ~\cite{he2016deep} with split-attention is developed.
-Also from \textit{ResNet} itself I took some numerical techniques to stabilize results.
+Many previous works exploit spectrograms to reduce audio tasks to image ones ~\cite{hamdyaudio} ~\cite{michelashvili2020denoising} ~\cite{xie2021audio}, among them ~\cite{xie2021audio} uses recurrent layers to deal with sequential knowledge.
+With the same intent we employ attention layers in one of the basic blocks that will form our model, inspired by ~\cite{zhang2020resnest}.
+Some tweaks to stabilize image feature extraction have been taken by \textit{ResNet} ~\cite{he2016deep}.
 
-\section{Method}
-What happens when ornithologists recognize a birdcall, do they first detect a sound and then focus to classify it or does their brain automatically recognize the bird species?
+\section{Method} \label{sec:method}
+What happens when ornithologists recognize a birdcall, do they first detect a sound to then focus on classifying it or does their brain automatically do that subconsiously?
 It makes sense to believe it is possible to be so proficient to unconsciously recognize birds, as already happens with familiar sounds ~\cite{kirmse2009familiarity}. 
-Let's call the first approach \textit{split} and the second one \textit{joint}, I tried both of them but only the latter model is covered here due to computational issues with the first one (for those interested, results are still shown on the GitHub repository).
+I tried both the approaches but only the "subconscious" one is covered here due to computational issues with the other.
 
 \paragraph*{Preprocessing.}
-The dataset recordings, regardless of bird calls or soudscapes, are highly unbalanced (figure \ref{fig:soundscapes_classification_freq}), that's why the dataset is augmented by random oversampling.
-Then it is split in train, validation and test sets by a 80-10-10 ratio and each 5 seconds window in audio tracks is encoded as a spectrogram in mel scale.
-Transforming spectrograms (e.g. random crops) could have led to losing positive data (i.e. a bird singing) and keeping silence, or vice versa, leading to wrong labeling; even if that did not happen it would have not been strange to lose relevant data, due to the task being modeled as seq2seq.   
-Anyway due to computing limitation it was not possible to use all the data so a smaller split of randomly selected data was used during training.
+The dataset is highly unbalanced (figure \ref{fig:soundscapes_classification_freq}) 
+so it was augmented by random oversampling and each 5 seconds frame is encoded as a spectrogram in mel scale.
+In audio samples there can be both plain ambient noise and birds chirping, thus transforming spectrograms (e.g. by random crops) can lead wrong labeling, besides that I wanted to avoid data losses due to them being sequential.
 
 \begin{figure}
     \centering
@@ -72,11 +71,9 @@ Anyway due to computing limitation it was not possible to use all the data so a 
 \end{figure}
 
 \paragraph*{CNNAtt.}
-This custom defined layer expoits multi-head attention layers to build a seq2seq model with the intent to grasp time-series knowledge.
-First the spectrogram passes through three different convolution pipelines, each one used respectively as a query, key and value for the attention.
-The RNNs in the attention layers work on tensor rows independently, this means that we would learn looking at frequencies with no connection whatsoever between them, thus a second attention layer works on transposed spectrograms' feature images.
-The two representations are then concatenated to get a 2 channel image.
-As a note, when we refer to a CNNAtt$k$ block it means that convolutions have all the same kernel size $k$.
+This seq2seq layer expolits attention to grasp sequential knowledge: the spectrogram passes through three different convolution pipelines with each one being the query, key and value for the attention, it takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest} with 3 fixed cardinals. 
+The RNNs in the attention layers work on tensor rows independently, looking at frequencies with no connection between them, thus a second attention layer works on spectrograms feature images' transpose; the two representations are then concatenated to a 2 channel image.
+When we refer to a CNNAtt$k$ convolutions have all the same kernel size $k$.
 
 \begin{figure}
     \centering
@@ -86,11 +83,9 @@ As a note, when we refer to a CNNAtt$k$ block it means that convolutions have al
 \end{figure}
 
 \paragraph*{CNNRes.}
-Residual networks are effective at reducing error when dealing with deep networks, and I tried one pretrained \textit{ResNet18} model as a feature extraction backbone.
-Also this simpler residual network has been defined, it employs six convolutions of the same kernel size among with two residual paths between them (figure \ref{fig:cnnres}).
-It takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest}, but the number of cardinals is fixed to 3 to use them as keys, queries and values in the multi-head attention layer. 
-Is possible to stack $n$ layers one on top of the other, in such cases we will write CNNRes$n$, as a rule the number of kernels stays the same when the feature map has the same size as the input image, and it is doubled when feature map has half the size of the image ~\cite{he2016deep}.
-There are no residuals between different CNNRes block therefore there is no need in dealing with tensor with different shape. 
+Residual networks help reducing errors in deep networks, this architecture employs six convolutions of the same kernel size with three skip connections between them (figure \ref{fig:cnnres}), $n$ layers can be stacked one on top of the other and we call it CNNRes$n$.
+As a rule the number of kernels stays the same when the input image and the feature map have the same size, it is doubled when the latter is half the first ~\cite{he2016deep}.
+Between two different CNNRes block there are no connections thus no dealing with different dimensionalities. 
 
 \begin{figure}
     \centering
@@ -99,18 +94,18 @@ There are no residuals between different CNNRes block therefore there is no need
     \label{fig:cnnres}
 \end{figure}
 
-The afore mentioned layers build up the feature extraction backbone, between CNNAtt and CNNRes we have another convolution to deal with the number of filters.
-After that we have $m$ bilinear GRU layers as a seq2seq model to extract other sequential knowledge, and last a linear layer to output logits.
+The afore mentioned layers build up the feature extraction backbone, plus a convolution between CNNAtt and CNNRes to deal with the number of filters, after that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
+We can ignore these two last heads when defining our architecture, due to them being common to all models.
 
-In our experiments we use a cross entropy loss, and use both models build  from scratch i.e. CNNRes2 (with kernel sizes $3$ and $5$) and CNNAtt5CNNRes2 that adds a CNNAtt block to it, according to the afore-mentioned rules.
-But we also fine-tune pretrained models \textit{ResNet18} and \textit{ResNet50}, with a convolution and a linear layer to match \textit{ResNet}s input and output shapes.
+\section{Results and conclusions}
+In our experiments we will use CNNRes2 (with kernel sizes $3$ and $5$) and CNNAtt5CNNRes2 models, according to the previously defined rules, we also fine-tune pretrained models \textit{ResNet18} and \textit{ResNet50}, in which we add a convolution and a linear layer to match \textit{ResNet}s input and output.
+Optimization is done by \textit{Adam} algorithm on a cross entropy loss with small batches, both to gain a regularizing effect and because of memory limitations.
 
-\section{Results}
-Training has been done using an \textit{Adam} optimizer with $8$ samples per batch, primarly due to memory limitations but it turned out good sinc we get some nice spikes.
-Results are reported at table \ref{tab:joint-results}, since datasets have been balanced and all classes are equally important it makes sense to use accuracy.
+Results are reported at table \ref{tab:joint-results}, a small learning rate is needed to stabilize descent due to the high variance of 8-sampled batches.
+Since datasets have been balanced and all classes are equally important it makes sense to use accuracy.
 
 \begin{table}[h!]
-    \caption{Performances are for the validation set with a fixed seed of 42, the test accuracy is reported for CNNRes2 only.}
+    \caption{Performances for the validation set on 20 epochs with fixed seed, the test accuracy is reported for CNNRes2 only.}
     \label{tab:joint-results}
     \begin{center}
         \begin{small}
@@ -121,8 +116,9 @@ Results are reported at table \ref{tab:joint-results}, since datasets have been 
                 & \multirow{2}{0.13\linewidth}{Acc. $\uparrow$} \\
                 Model \\
                 \midrule
-                ResNet18 & 1e-4 & .21 & 92.2\% \\
                 ResNet50 & 1e-4 & .52 & 82.3\% \\
+                ResNet18 & 1e-4 & .21 & 92.2\% \\
+                ResNet18 (frozen) & todo & todo & todo\% \\
                 CNNRes2 & 1e-4 & \textbf{.02} & \textbf{99.1\%} \\
                 CNNAtt5 + CNNRes2 & 1e-4 & .04 & 98.7\% \\
                 \midrule
@@ -142,11 +138,11 @@ Results are reported at table \ref{tab:joint-results}, since datasets have been 
     \label{fig:val-loss}
 \end{figure}
 
-Occam's razor holds and it seems that a simpler approach is the way to go, pretrained models are not very good but it can happen with transfer learning. 
+From the results we can confirm that convolutional neural networks do wonders when priors apply, while training attention is not worth the hassle. 
+Occam's razor holds and simpler residual network seem to be better than fine-tuned models, yet we are transferring knowledge so we cannot say that with certainty. 
 
 \paragraph*{Future works.}
-It would be nice to have enough resources to train on the whole dataset, this way we could also effectively try the split method.
-Also adding a threshold as an hyperparameter we could consider secondary labels too.
+Adding a threshold to consider secondary labels too, train on the whole dataset to see if it yields some improvement and train the "conscious" model (section \ref{sec:method}) to compare results.
 
 \bibliography{references.bib}
 \bibliographystyle{dlai2021}
