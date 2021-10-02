@@ -40,9 +40,9 @@ The code is available on GitHub at \href{https://github.com/edodema/Birdcalls}{h
 \end{abstract}
 
 \section{Introduction}
-Birds are high up in the food chain, this means that are sensitive to changes in the ecosystem and monitoring them can give us informations about pollution and the environment as a whole.
-Small birds are often difficult to sight and easy to hear, these calls are generally characteristic of each species so throguh them we can identify them in a smart way.
-Our goal is to listen to ambient recordings and guess birds' species through their call, the task is set up as an image classification among $n+1$ classes i.e. $n$ species plus no bird being destected. 
+Birds are high up in the food chain, this means that are sensitive to changes in the ecosystem and monitoring them can give us informations about pollution and the environment as a whole ~\cite{becker2003biomonitoring}.
+Small birds are often difficult to sight and easy to hear, their calls are generally characteristic of each species so can be used for identification.
+Our goal is to listen to ambient recordings and guess birds' species through their calls, the task is set up as an image classification among $n+1$ classes i.e. $n$ species plus no bird being detected. 
 
 \paragraph*{Dataset.}
 The BirdCLEF2021 dataset contains both recordings of birds in a controlled environment and noisy soundscapes tracks, we will use only the latter.
@@ -61,7 +61,7 @@ I tried both the approaches but only the "subconscious" one is covered here due 
 \paragraph*{Preprocessing.}
 The dataset is highly unbalanced (figure \ref{fig:soundscapes_classification_freq}) 
 so it was augmented by random oversampling and each 5 seconds frame is encoded as a spectrogram in mel scale.
-In audio samples there can be both plain ambient noise and birds chirping, thus transforming spectrograms (e.g. by random crops) can lead wrong labeling, besides that I wanted to avoid data losses due to them being sequential.
+In audio samples there can be both plain ambient noise and birds chirping, thus transforming spectrograms (e.g. by random crops) can lead tp wrong labeling, besides that, I also wanted to avoid data losses due to them being sequential.
 
 \begin{figure}
     \centering
@@ -94,7 +94,7 @@ Between two different CNNRes block there are no connections thus no dealing with
     \label{fig:cnnres}
 \end{figure}
 
-The afore mentioned layers build up the feature extraction backbone, plus a convolution between CNNAtt and CNNRes to deal with the number of filters, after that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
+The aforementioned layers build up the feature extraction backbone, plus a convolution between CNNAtt and CNNRes to deal with the number of filters, after that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
 We can ignore these two last heads when defining our architecture, due to them being common to all models.
 
 \section{Results and conclusions}
