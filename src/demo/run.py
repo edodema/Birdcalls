@@ -93,7 +93,7 @@ pred = translate_detection(pred)
 col1, col2 = st.beta_columns(2)
 
 with col1:
-    st.header("Truth")
+    st.header("Label")
     st.subheader(truth)
 
 with col2:
