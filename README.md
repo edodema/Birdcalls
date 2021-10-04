@@ -38,7 +38,7 @@ N.b. I did **not** participate to the challenge nor did submit any model.
 ```
 
 ## Requirements
-- Python 3.8
+- Python 3.9
 - `kaggle`
 - `pip`
 - 
@@ -64,7 +64,7 @@ $ chmod u+x setup.sh
 $ ./setup.sh -dmo
 ```
 
-**Remember to change absolute paths in `.env.template` and rename it to `.env`!**
+**Remember to configure the  `.venv` environment, change absolute paths in `.env.template` and rename it to `.env`!**
 
 ## Demo
 Navigate to `demo` and execute the file `run.sh`.
