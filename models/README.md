@@ -1,9 +1,9 @@
 # Models
 
-Here are showed some models yet not all ones that have been used nor tested, still the the name of a model can broadly describe the definition of models that are not displayed below:
-- In CNNAtt*n* we always have 3 kernels of the same size *n*.
-- In CNNRes*n* the size of the kernels is not fixed, *n* is how many of them we have and in this case the name is not enough to describe the model.
-- GRU*n* and FC*n* means that we have *n* GRUs or FCs layers stacked.
+Here are shown some models (yet not all) that have been used nor tested,the the name of a model can broadly describe its architecture according to the following scheme:
+- In CNNAtt*k* we always have 3 kernels of the same size *k*.
+- In CNNRes*n* the size of the kernels is not fixed, we have *n* of them and in this case the name is not enough to describe the model.
+- GRU*m* and FC*m* means that we have *m* GRUs or FCs layers stacked.
 
 ## CNNRes3GRU4FC2
 ```
