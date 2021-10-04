@@ -1,4 +1,3 @@
-#!/usr/bin/bash
 # A simple script to easily setup directories and download the dataset.
 
 while getopts ":hdom" opt; do
