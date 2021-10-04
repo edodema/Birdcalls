@@ -60,6 +60,7 @@ And last download dependencies, keep in mind that process could require one hour
 To get more information on the script run `./setup.sh -h`.
 
 ```
+$ chmod u+x setup.sh
 $ ./setup.sh -dmo
 ```
 
