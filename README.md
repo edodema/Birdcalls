@@ -11,9 +11,9 @@
 </p>
 
 A bird classification expert system based on the <a href="https://www.kaggle.com/c/birdclef-2021/data"> BirdCLEF2021 </a> task and dataset, in the [report](report/main.pdf) only one model is described even though in the code we have more.
-This is due to two methods being developed and only the second one revealed to be feasible due to computational limitations.
+This is due to two methods being developed but only the second one revealed to be computationally feasible.
 
-N.b. I did **not** participate to the challenge nor submit this model.
+N.b. I did **not** participate to the challenge nor did submit any model.
 
 ## Structure
 ```
@@ -41,12 +41,13 @@ N.b. I did **not** participate to the challenge nor submit this model.
 - Python 3.8
 - `kaggle`
 - `pip`
-
+- 
 ## Installation
 
-First download the repository.
+First download the repository and place yourself in it.
 ```angular2html
 $ git push https://github.com/edodema/Birdcalls.git
+$ cd Birdcalls
 ```
 Then set up the Python environment.
 ```
