@@ -52,6 +52,7 @@ $ cd Birdcalls
 Then set up the Python environment.
 ```
 $ conda create -n Birdcalls
+$ python -m ensurepip --user --upgrade
 $ conda activate Birdcalls
 $ pip install -r requirements.txt
 ```
