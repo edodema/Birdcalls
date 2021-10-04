@@ -50,7 +50,7 @@ Tracks are split by 5 seconds  windows and labeled with primary and secondary go
 
 \section{Related work}
 Many previous works exploit spectrograms to reduce audio tasks to image ones ~\cite{hamdyaudio} ~\cite{michelashvili2020denoising} ~\cite{xie2021audio}, among them ~\cite{xie2021audio} uses recurrent layers to deal with sequential knowledge.
-With the same intent we employ attention layers in one of the basic blocks that will form our model, inspired by ~\cite{zhang2020resnest}.
+With the same intent we employ attention layers in one of the basic blocks that will form our model - inspired by ~\cite{zhang2020resnest}.
 Some tweaks to stabilize image feature extraction have been taken by \textit{ResNet} ~\cite{he2016deep}.
 
 \section{Method} \label{sec:method}
@@ -61,7 +61,7 @@ I tried both the approaches but only the "subconscious" one is covered here due 
 \paragraph*{Preprocessing.}
 The dataset is highly unbalanced (figure \ref{fig:soundscapes_classification_freq}) 
 so it was augmented by random oversampling and each 5 seconds frame is encoded as a spectrogram in mel scale.
-In audio samples there can be both plain ambient noise and birds chirping, thus transforming spectrograms (e.g. by random crops) can lead tp wrong labeling, besides that, I also wanted to avoid data losses due to them being sequential.
+In audio samples there can be both plain ambient noise and birds chirping, thus transforming spectrograms (e.g. by random crops) can lead to wrong labeling, besides that, I also wanted to avoid data losses due to this type of knowledge being sequential.
 
 \begin{figure}
     \centering
@@ -71,8 +71,8 @@ In audio samples there can be both plain ambient noise and birds chirping, thus 
 \end{figure}
 
 \paragraph*{CNNAtt.}
-This seq2seq layer expolits attention to grasp sequential knowledge: the spectrogram passes through three different convolution pipelines with each one being the query, key and value for the attention, it takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest} with 3 fixed cardinals. 
-The RNNs in the attention layers work on tensor rows independently, looking at frequencies with no connection between them, thus a second attention layer works on spectrograms feature images' transpose; the two representations are then concatenated to a 2 channel image.
+This seq2seq layer expolits attention to grasp that sequential knowledge: the spectrogram passes through three different convolution pipelines with each one being the query, key and value for the attention, it takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest} with 3 fixed cardinals. 
+Self-attention layers  work on tensor rows independently, looking at frequencies with no connection between them, thus a second attention layer works on spectrograms feature images' transpose; the two representations are then concatenated to a 2 channel image.
 When we refer to a CNNAtt$k$ convolutions have all the same kernel size $k$.
 
 \begin{figure}
@@ -84,7 +84,7 @@ When we refer to a CNNAtt$k$ convolutions have all the same kernel size $k$.
 
 \paragraph*{CNNRes.}
 Residual networks help reducing errors in deep networks, this architecture employs six convolutions of the same kernel size with three skip connections between them (figure \ref{fig:cnnres}), $n$ layers can be stacked one on top of the other and we call it CNNRes$n$.
-As a rule the number of kernels stays the same when the input image and the feature map have the same size, it is doubled when the latter is half the first ~\cite{he2016deep}.
+As a rule the number of kernels stays the same when the input image and the feature map have the same size, it is doubled when the latter is half the first to preserve complexity ~\cite{he2016deep}.
 Between two different CNNRes block there are no connections thus no dealing with different dimensionalities. 
 
 \begin{figure}
@@ -94,17 +94,20 @@ Between two different CNNRes block there are no connections thus no dealing with
     \label{fig:cnnres}
 \end{figure}
 
-The aforementioned layers build up the feature extraction backbone, plus a convolution between CNNAtt and CNNRes to deal with the number of filters, after that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
-We can ignore these two last heads when defining our architecture, due to them being common to all models.
+The aforementioned layers build up the feature extraction backbone, a convolution between CNNAtt and CNNRes are needed to deal with the number of filters.
+After that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
+When defining models for out experiments we can ignore these last two heads due to them being common to all of them.
 
 \section{Results and conclusions}
 In our experiments we will use CNNRes2 (with kernel sizes $3$ and $5$) and CNNAtt5CNNRes2 models, according to the previously defined rules, we also fine-tune pretrained models \textit{ResNet18} and \textit{ResNet50}, in which we add a convolution and a linear layer to match \textit{ResNet}s input and output.
 Optimization is done by \textit{Adam} algorithm on a cross entropy loss with small batches, both to gain a regularizing effect and because of memory limitations.
-
-Results are reported at table \ref{tab:joint-results}, a small learning rate is needed to stabilize descent due to the high variance of 8-sampled batches.
+Results are reported in table \ref{tab:joint-results}, a small learning rate is needed to stabilize descent due to the high variance of 8-sampled batches.
 Since datasets have been balanced and all classes are equally important it makes sense to use accuracy.
 
-\begin{table}[h!]
+From the results we can confirm that convolutional neural networks do wonders when priors apply, while training attention is not worth the hassle. 
+Occam's razor holds and simpler residual networks seem to be better than fine-tuned models, yet we are transferring knowledge so we cannot say that with certainty. 
+
+\begin{table}
     \caption{Performances for the validation set on 20 epochs with fixed seed, the test accuracy is reported for CNNRes2 only.}
     \label{tab:joint-results}
     \begin{center}
@@ -137,9 +140,6 @@ Since datasets have been balanced and all classes are equally important it makes
     \caption{Validation loss for CNNRes2GRU1FC1.}
     \label{fig:val-loss}
 \end{figure}
-
-From the results we can confirm that convolutional neural networks do wonders when priors apply, while training attention is not worth the hassle. 
-Occam's razor holds and simpler residual network seem to be better than fine-tuned models, yet we are transferring knowledge so we cannot say that with certainty. 
 
 \paragraph*{Future works.}
 Adding a threshold to consider secondary labels too, train on the whole dataset to see if it yields some improvement and train the "conscious" model (section \ref{sec:method}) to compare results.
