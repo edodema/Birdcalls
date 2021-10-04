@@ -46,7 +46,7 @@ N.b. I did **not** participate to the challenge nor did submit any model.
 
 First download the repository and place yourself in it.
 ```angular2html
-$ git push https://github.com/edodema/Birdcalls.git
+$ git clone https://github.com/edodema/Birdcalls.git
 $ cd Birdcalls
 ```
 Then set up the Python environment.
