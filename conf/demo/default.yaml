@@ -1,5 +1,5 @@
 bird_names: ${oc.env:BIRD_NAMES}
 
-csv: ${oc.env:TEST_SOUNDSCAPES_CSV}
+csv: ${oc.env:TEST_JOINT_CSV}
 
 checkpoint: ${oc.env:MODEL_JOINT}
