@@ -73,5 +73,4 @@ $ cd src/demo
 $ chmod u+x run.sh
 $ ./run.sh
 ```
-![Demo positive](/report/images/demo-yes.png)
-![Demo negative](/report/images/demo-no.png)
+![](report/images/demo.gif)
