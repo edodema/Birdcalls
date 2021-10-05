@@ -41,7 +41,6 @@ N.b. I did **not** participate to the challenge nor did submit any model.
 - Python 3.9
 - `kaggle`
 - `pip`
-- 
 ## Installation
 
 First download the repository and place yourself in it.
