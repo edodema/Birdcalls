@@ -48,16 +48,8 @@ First download the repository and place yourself in it.
 $ git clone https://github.com/edodema/Birdcalls.git
 $ cd Birdcalls
 ```
-Then set up the Python environment.
-```
-$ conda create -n Birdcalls
-$ python -m ensurepip --user --upgrade
-$ conda activate Birdcalls
-$ pip install -r requirements.txt
-```
-And last download dependencies, keep in mind that process could require one hour or more, depending on your connection. 
-To get more information on the script run `./setup.sh -h`.
-
+Then download dependencies, keep in mind that process could require one hour or more, depending on your connection.
+If one or more commans fail execute them separately, to get more information on the script run `./setup.sh -h`.
 ```
 $ chmod u+x setup.sh
 $ ./setup.sh -dmo
