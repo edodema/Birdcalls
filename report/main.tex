@@ -73,7 +73,7 @@ In audio samples there can be both plain ambient noise and birds chirping, thus 
 \paragraph*{CNNAtt.}
 This seq2seq layer expolits attention to grasp that sequential knowledge: the spectrogram passes through three different convolution pipelines with each one being the query, key and value for the attention, it takes inspiration by a \textit{ResNeSt} block ~\cite{zhang2020resnest} with 3 fixed cardinals. 
 Self-attention layers  work on tensor rows independently, looking at frequencies with no connection between them, thus a second attention layer works on spectrograms feature images' transpose; the two representations are then concatenated to a 2 channel image.
-When we refer to a CNNAtt$k$ convolutions have all the same kernel size $k$.
+When we refer to a CNNAtt$k$, convolutions have all the same kernel size $k$.
 
 \begin{figure}
     \centering
@@ -85,7 +85,7 @@ When we refer to a CNNAtt$k$ convolutions have all the same kernel size $k$.
 \paragraph*{CNNRes.}
 Residual networks help reducing errors in deep networks, this architecture employs six convolutions of the same kernel size with three skip connections between them (figure \ref{fig:cnnres}), $n$ layers can be stacked one on top of the other and we call it CNNRes$n$.
 As a rule the number of kernels stays the same when the input image and the feature map have the same size, it is doubled when the latter is half the first to preserve complexity ~\cite{he2016deep}.
-Between two different CNNRes block there are no connections thus no dealing with different dimensionalities. 
+Between two different CNNRes blocks there are no connections thus no dealing with different dimensionalities. 
 
 \begin{figure}
     \centering
@@ -94,9 +94,9 @@ Between two different CNNRes block there are no connections thus no dealing with
     \label{fig:cnnres}
 \end{figure}
 
-The aforementioned layers build up the feature extraction backbone, a convolution between CNNAtt and CNNRes are needed to deal with the number of filters.
+The aforementioned layers build up the feature extraction backbone, a convolution between CNNAtt and CNNRes is needed to deal with the number of filters.
 After that we have $m$ bilinear GRU layers to extract causal knowledge, and last a linear layer to output logits.
-When defining models for out experiments we can ignore these last two heads due to them being common to all of them.
+When defining models for our experiments we can ignore these last two heads due to them being common to all experiments.
 
 \section{Results and conclusions}
 In our experiments we will use CNNRes2 (with kernel sizes $3$ and $5$) and CNNAtt5CNNRes2 models, according to the previously defined rules, we also fine-tune pretrained models \textit{ResNet18} and \textit{ResNet50}, in which we add a convolution and a linear layer to match \textit{ResNet}s input and output.
@@ -142,7 +142,7 @@ Occam's razor holds and simpler residual networks seem to be better than fine-tu
 \end{figure}
 
 \paragraph*{Future works.}
-Adding a threshold to consider secondary labels too, train on the whole dataset to see if it yields some improvement and train the "conscious" model (section \ref{sec:method}) to compare results.
+Adding a threshold to consider also secondary labels, training on the whole dataset to see if it yields some improvement and last but not least train the "conscious" model (section \ref{sec:method}) to compare results.
 
 \bibliography{references.bib}
 \bibliographystyle{dlai2021}
