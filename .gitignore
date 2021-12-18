@@ -419,7 +419,6 @@ TSWLatexianTemp*
 data
 out
 wandb
-venv
 
 # Exceptions
 !.gitkeep

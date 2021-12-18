@@ -58,10 +58,8 @@ $ ./setup.sh -dmo
 **Remember to configure the  `.venv` environment, change absolute paths in `.env.template` and rename it to `.env`!**
 
 ## Demo
-Navigate to `demo` and execute the file `run.sh`.
 ```
-$ cd src/demo
-$ chmod u+x run.sh
-$ ./run.sh
+$ chmod u+x ./src/demo/run.sh
+$ ./src/demo/run.sh
 ```
 ![](report/images/demo.gif)
